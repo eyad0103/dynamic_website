@@ -99,6 +99,23 @@ app.get('/contact', (req, res) => {
     });
 });
 
+// Dashboard Route
+app.get('/dashboard', (req, res) => {
+    res.render('dashboard', { 
+        title: 'System Dashboard',
+        serverStatus: 'ONLINE',
+        serverUptime: systemBaseline.getUptimeFormatted(),
+        serverTime: new Date().toISOString(),
+        totalRequests: req.requestCount || 0,
+        systemInfo: {
+            nodeVersion: process.version,
+            platform: process.platform,
+            memory: process.memoryUsage(),
+            pid: process.pid
+        }
+    });
+});
+
 // API Routes
 app.get('/api/posts', (req, res) => {
     res.json({
@@ -200,6 +217,7 @@ app.listen(PORT, () => {
     console.log(`   GET  / - Home page`);
     console.log(`   GET  /about - About page`);
     console.log(`   GET  /contact - Contact page`);
+    console.log(`   GET  /dashboard - System dashboard`);
     console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
