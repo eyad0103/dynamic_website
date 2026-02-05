@@ -114,7 +114,7 @@ app.get('/dashboard', (req, res) => {
             pid: process.pid
         }
     });
-});
+}); // Dashboard deployed successfully
 
 // API Routes
 app.get('/api/posts', (req, res) => {
