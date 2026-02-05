@@ -5,13 +5,37 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Force redeploy - updated timestamp
+// System Baseline Object
+const systemBaseline = {
+    serverStartTime: new Date(),
+    uptime: function() {
+        return Date.now() - this.serverStartTime.getTime();
+    },
+    getUptimeFormatted: function() {
+        const uptime = this.uptime();
+        const seconds = Math.floor(uptime / 1000) % 60;
+        const minutes = Math.floor(uptime / (1000 * 60)) % 60;
+        const hours = Math.floor(uptime / (1000 * 60 * 60)) % 24;
+        const days = Math.floor(uptime / (1000 * 60 * 60 * 24));
+        
+        return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+};
+
+// Request Count Middleware
+let requestCount = 0;
+const requestCounter = (req, res, next) => {
+    requestCount++;
+    req.requestCount = requestCount;
+    next();
+};
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use(requestCounter); // Add request counting middleware
 
 // Set EJS as view engine
 app.set('view engine', 'ejs');
@@ -166,6 +190,8 @@ app.listen(PORT, () => {
     console.log('🚀 Dynamic Website Server Started Successfully!');
     console.log(`📍 Server running on port ${PORT}`);
     console.log(`🌐 Local URL: http://localhost:${PORT}`);
+    console.log(`⏰ Server started at: ${systemBaseline.serverStartTime.toISOString()}`);
+    console.log(`📊 Request counter initialized`);
     console.log(`📡 API Endpoints:`);
     console.log(`   GET  /api/posts - Get all posts`);
     console.log(`   GET  /api/posts/:id - Get single post`);
