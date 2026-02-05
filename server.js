@@ -86,14 +86,7 @@ app.get('/', (req, res) => {
     });
 });
 
-// Original website route
-app.get('/website', (req, res) => {
-    res.render('index', { 
-        title: 'Dynamic Website',
-        posts: posts,
-        message: 'Welcome to your new dynamic website!'
-    });
-});
+// Original website route (removed - dashboard is now main)
 
 app.get('/about', (req, res) => {
     res.render('about', { 
@@ -232,7 +225,6 @@ app.listen(PORT, () => {
     console.log(`   POST /api/contact - Submit contact form`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
-    console.log(`   GET  /website - Original website`);
     console.log(`   GET  /about - About page`);
     console.log(`   GET  /contact - Contact page`);
     console.log(`   GET  /dashboard - System dashboard (alias)`);
