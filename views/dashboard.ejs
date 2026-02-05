@@ -89,6 +89,17 @@
             50% { opacity: 0.5; }
         }
 
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
         .dashboard-content {
             max-width: 1200px;
             margin: 0 auto;
@@ -293,19 +304,156 @@
                 </div>
             </div>
 
-                    </main>
+            <!-- Cyber Console -->
+            <div class="system-info" style="margin-top: 2rem;">
+                <div class="metric-label">System Console</div>
+                <div class="console-container" id="cyberConsole" style="
+                    background: #000;
+                    border: 1px solid #00ff88;
+                    border-radius: 4px;
+                    padding: 1rem;
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.9rem;
+                    color: #00ff88;
+                    min-height: 200px;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    position: relative;
+                ">
+                    <div id="consoleOutput" style="margin-bottom: 1rem;"></div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span id="typingIndicator" style="color: #00ff88;">▸</span>
+                        <span id="consoleInput" style="color: #ffffff; opacity: 0.7;">SYSTEM READY</span>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // Minimal JavaScript for subtle effects
+        // System monitoring and cyber effects
+        let requestCount = <%= totalRequests %>;
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // Add subtle hover sound effect simulation
+            // Initialize console
+            const consoleOutput = document.getElementById('consoleOutput');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const consoleInput = document.getElementById('consoleInput');
+            
+            // Simulate system boot sequence
+            const bootMessages = [
+                'SYSTEM BOOT INITIALIZED...',
+                'LOADING CYBER MODULES...',
+                'ESTABLISHING SECURE CONNECTION...',
+                'SYSTEM READY'
+            ];
+            
+            let messageIndex = 0;
+            function typeMessage(message, callback) {
+                let charIndex = 0;
+                typingIndicator.style.display = 'inline-block';
+                consoleInput.textContent = '';
+                
+                const typeInterval = setInterval(() => {
+                    if (charIndex < message.length) {
+                        consoleInput.textContent += message[charIndex];
+                        charIndex++;
+                    } else {
+                        clearInterval(typeInterval);
+                        typingIndicator.style.display = 'none';
+                        if (callback) callback();
+                    }
+                }, 50);
+            }
+            
+            function addConsoleMessage(message, type = 'system') {
+                const messageElement = document.createElement('div');
+                messageElement.style.cssText = `
+                    margin-bottom: 0.5rem;
+                    padding: 0.25rem 0.5rem;
+                    background: rgba(0, 255, 136, 0.1);
+                    border-left: 2px solid #00ff88;
+                    color: ${type === 'system' ? '#00ff88' : '#ffffff'};
+                    font-size: 0.8rem;
+                    animation: fadeIn 0.3s ease;
+                `;
+                messageElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                consoleOutput.appendChild(messageElement);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+            
+            // Start boot sequence
+            function startBootSequence() {
+                if (messageIndex < bootMessages.length) {
+                    typeMessage(bootMessages[messageIndex], () => {
+                        messageIndex++;
+                        setTimeout(startBootSequence, 1000);
+                    });
+                } else {
+                    // Start live monitoring
+                    startLiveMonitoring();
+                }
+            }
+            
+            function startLiveMonitoring() {
+                // Add periodic system messages
+                setInterval(() => {
+                    const messages = [
+                        'Scanning network traffic...',
+                        'Monitoring system resources...',
+                        'Updating security protocols...',
+                        'Syncing with main server...'
+                    ];
+                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                    addConsoleMessage(randomMessage, 'system');
+                }, 5000);
+                
+                // Update metrics periodically
+                setInterval(() => {
+                    updateMetrics();
+                }, 2000);
+            }
+            
+            function updateMetrics() {
+                // Fetch latest system stats
+                fetch('/api/system/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        const uptimeElement = document.querySelector('.metric-value');
+                        if (uptimeElement && uptimeElement[0]) {
+                            uptimeElement[0].textContent = data.uptime;
+                        }
+                        
+                        const memoryElement = document.querySelectorAll('.metric-value')[1];
+                        if (memoryElement) {
+                            memoryElement.textContent = data.memory.heapUsed + 'MB';
+                        }
+                        
+                        const requestsElement = document.querySelectorAll('.metric-value')[2];
+                        if (requestsElement) {
+                            requestsElement.textContent = data.requests;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching system stats:', error);
+                    });
+            }
+            
+            // Add hover effects to cards
             const cards = document.querySelectorAll('.metric-card');
             cards.forEach(card => {
                 card.addEventListener('mouseenter', function() {
                     this.style.transition = 'all 0.1s ease';
+                    this.style.boxShadow = '0 0 25px rgba(0, 255, 136, 0.5)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.3)';
                 });
             });
+            
+            // Start the experience
+            setTimeout(startBootSequence, 1000);
         });
     </script>
 </body>

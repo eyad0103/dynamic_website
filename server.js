@@ -179,7 +179,7 @@ app.post('/api/contact', (req, res) => {
         message 
     });
     
-    // Simulate processing
+    // Simulate processing time
     setTimeout(() => {
         res.json({ 
             success: true, 
@@ -191,6 +191,37 @@ app.post('/api/contact', (req, res) => {
             }
         });
     }, 500); // Simulate processing time
+});
+
+// System API Routes
+app.get('/api/system/status', (req, res) => {
+    res.json({
+        status: "online",
+        uptime: systemBaseline.getUptimeFormatted(),
+        timestamp: new Date().toISOString(),
+        memory: process.memoryUsage(),
+        requests: req.requestCount || 0
+    });
+});
+
+app.get('/api/system/stats', (req, res) => {
+    const memory = process.memoryUsage();
+    res.json({
+        uptime: systemBaseline.getUptimeFormatted(),
+        memory: {
+            rss: Math.round(memory.rss / 1024 / 1024) + 'MB',
+            heapTotal: Math.round(memory.heapTotal / 1024 / 1024) + 'MB',
+            heapUsed: Math.round(memory.heapUsed / 1024 / 1024) + 'MB',
+            external: Math.round(memory.external / 1024 / 1024) + 'MB'
+        },
+        requests: req.requestCount || 0,
+        system: {
+            nodeVersion: process.version,
+            platform: process.platform,
+            pid: process.pid,
+            uptime: systemBaseline.getUptimeFormatted()
+        }
+    });
 });
 
 // Handle 404
@@ -223,6 +254,8 @@ app.listen(PORT, () => {
     console.log(`   GET  /api/posts - Get all posts`);
     console.log(`   GET  /api/posts/:id - Get single post`);
     console.log(`   POST /api/contact - Submit contact form`);
+    console.log(`   GET  /api/system/status - System status API`);
+    console.log(`   GET  /api/system/stats - System statistics API`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
     console.log(`   GET  /about - About page`);
