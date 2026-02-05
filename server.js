@@ -71,6 +71,23 @@ const posts = [
 
 // Routes
 app.get('/', (req, res) => {
+    res.render('dashboard', { 
+        title: 'System Dashboard',
+        serverStatus: 'ONLINE',
+        serverUptime: systemBaseline.getUptimeFormatted(),
+        serverTime: new Date().toISOString(),
+        totalRequests: req.requestCount || 0,
+        systemInfo: {
+            nodeVersion: process.version,
+            platform: process.platform,
+            memory: process.memoryUsage(),
+            pid: process.pid
+        }
+    });
+});
+
+// Original website route
+app.get('/website', (req, res) => {
     res.render('index', { 
         title: 'Dynamic Website',
         posts: posts,
@@ -214,10 +231,11 @@ app.listen(PORT, () => {
     console.log(`   GET  /api/posts/:id - Get single post`);
     console.log(`   POST /api/contact - Submit contact form`);
     console.log(`🎨 Pages:`);
-    console.log(`   GET  / - Home page`);
+    console.log(`   GET  / - System dashboard (main)`);
+    console.log(`   GET  /website - Original website`);
     console.log(`   GET  /about - About page`);
     console.log(`   GET  /contact - Contact page`);
-    console.log(`   GET  /dashboard - System dashboard`);
+    console.log(`   GET  /dashboard - System dashboard (alias)`);
     console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
