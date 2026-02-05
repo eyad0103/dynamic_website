@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <meta name="description" content="About our dynamic website built with Node.js and Express">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <h1><i class="fas fa-rocket"></i> Dynamic Website</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="/" class="nav-link">Home</a></li>
+                    <li><a href="/about" class="nav-link active">About</a></li>
+                    <li><a href="/contact" class="nav-link">Contact</a></li>
+                </ul>
+                <div class="nav-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="page-hero">
+            <div class="container">
+                <h1 class="page-title">About Us</h1>
+                <p class="page-subtitle"><%= message %></p>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="container">
+                <div class="content-grid">
+                    <div class="content-main">
+                        <h2>Our Story</h2>
+                        <p>Welcome to our dynamic website! This project demonstrates a complete full-stack web application built with modern technologies and best practices.</p>
+                        
+                        <h3>Technology Stack</h3>
+                        <div class="tech-stack">
+                            <div class="tech-item">
+                                <i class="fab fa-node-js tech-icon"></i>
+                                <div>
+                                    <h4>Node.js</h4>
+                                    <p>JavaScript runtime for building scalable server-side applications</p>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <i class="fas fa-server tech-icon"></i>
+                                <div>
+                                    <h4>Express.js</h4>
+                                    <p>Fast, unopinionated web framework for Node.js</p>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <i class="fas fa-code tech-icon"></i>
+                                <div>
+                                    <h4>EJS</h4>
+                                    <p>Simple templating engine for generating HTML markup</p>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <i class="fab fa-css3-alt tech-icon"></i>
+                                <div>
+                                    <h4>Modern CSS</h4>
+                                    <p>Responsive design with animations and modern features</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3>Features</h3>
+                        <div class="features-list">
+                            <% features.forEach(feature => { %>
+                                <div class="feature-item">
+                                    <i class="<%= feature.icon %>"></i>
+                                    <div>
+                                        <h4><%= feature.title %></h4>
+                                        <p><%= feature.description %></p>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+
+                        <h3>Project Structure</h3>
+                        <div class="project-structure">
+                            <pre><code>dynamic-website/
+├── package.json          # Dependencies and scripts
+├── server.js            # Express server
+├── views/              # EJS templates
+│   ├── index.ejs       # Home page
+│   ├── about.ejs       # About page
+│   ├── contact.ejs     # Contact page
+│   └── 404.ejs        # Error page
+├── public/             # Static assets
+│   ├── css/style.css   # Stylesheets
+│   └── js/script.js   # Client-side JS
+└── README.md           # Documentation</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="content-sidebar">
+                        <div class="sidebar-card">
+                            <h3><i class="fas fa-chart-line"></i> Project Stats</h3>
+                            <div class="stats">
+                                <div class="stat-item">
+                                    <span class="stat-number">100%</span>
+                                    <span class="stat-label">Responsive</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">24/7</span>
+                                    <span class="stat-label">Available</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">∞</span>
+                                    <span class="stat-label">Scalable</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">3</span>
+                                    <span class="stat-label">API Endpoints</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-card">
+                            <h3><i class="fas fa-rocket"></i> Get Started</h3>
+                            <p>Ready to build your own dynamic website?</p>
+                            <div class="action-buttons">
+                                <a href="/contact" class="btn btn-primary btn-block">
+                                    <i class="fas fa-envelope"></i>
+                                    Contact Us
+                                </a>
+                                <a href="https://github.com" target="_blank" class="btn btn-outline btn-block">
+                                    <i class="fab fa-github"></i>
+                                    View Source
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-card">
+                            <h3><i class="fas fa-link"></i> Quick Links</h3>
+                            <ul class="sidebar-links">
+                                <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                                <li><a href="/contact"><i class="fas fa-envelope"></i> Contact</a></li>
+                                <li><a href="/api/posts" target="_blank"><i class="fas fa-code"></i> API Docs</a></li>
+                                <li><a href="https://nodejs.org" target="_blank"><i class="fab fa-node-js"></i> Node.js</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Dynamic Website</h4>
+                    <p>A modern full-stack web application built with Node.js and Express.</p>
+                    <div class="social-links">
+                        <a href="https://github.com" target="_blank" class="social-link">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="https://twitter.com" target="_blank" class="social-link">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/api/posts" target="_blank">API</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://nodejs.org" target="_blank">Node.js Docs</a></li>
+                        <li><a href="https://expressjs.com" target="_blank">Express Docs</a></li>
+                        <li><a href="https://ejs.co" target="_blank">EJS Docs</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Dynamic Website. Built with <i class="fas fa-heart" style="color: #e74c3c;"></i> using Node.js</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/script.js"></script>
+</body>
+</html>
