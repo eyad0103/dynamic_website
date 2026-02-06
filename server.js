@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const WebSocket = require('ws');
+const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +27,47 @@ const systemBaseline = {
 
 // Set the API key from the user
 process.env.OPENROUTER_API_KEY = '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';
+
+// Agent management system
+const agents = new Map(); // pcId -> { ws, token, lastSeen, systemInfo }
+const agentPackages = new Map(); // packageId -> { pcId, token, createdAt, downloaded }
+
+// Generate secure token
+function generateToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Create agent package
+function createAgentPackage(pcName, pcLocation, pcOwner, pcType, pcDescription) {
+    const pcId = `PC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const token = generateToken();
+    const packageId = crypto.randomBytes(16).toString('hex');
+    
+    const agentConfig = {
+        pcId,
+        token,
+        serverUrl: process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com'
+    };
+    
+    agentPackages.set(packageId, {
+        pcId,
+        token,
+        pcName,
+        pcLocation,
+        pcOwner,
+        pcType,
+        pcDescription,
+        createdAt: new Date().toISOString(),
+        downloaded: false
+    });
+    
+    return {
+        packageId,
+        pcId,
+        token,
+        config: agentConfig
+    };
+}
 
 // Force redeploy for API key management - v5
 console.log('🔑 API Key Management: OpenRouter API key configured');
@@ -855,6 +899,155 @@ app.use((req, res) => {
     });
 });
 
+// Agent management endpoints
+app.post('/api/create-agent-package', async (req, res) => {
+    try {
+        const { pcName, pcLocation, pcOwner, pcType, pcDescription } = req.body;
+        
+        if (!pcName || !pcLocation || !pcOwner || !pcType) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Missing required fields' 
+            });
+        }
+        
+        const agentPackage = createAgentPackage(pcName, pcLocation, pcOwner, pcType, pcDescription);
+        
+        console.log(`📦 Agent package created: ${agentPackage.pcId}`);
+        
+        res.json({ 
+            success: true, 
+            packageId: agentPackage.packageId,
+            pcId: agentPackage.pcId,
+            downloadUrl: `/api/agent-package/${agentPackage.packageId}`
+        });
+    } catch (error) {
+        console.error('Failed to create agent package:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+app.get('/api/agent-package/:packageId', (req, res) => {
+    try {
+        const { packageId } = req.params;
+        const agentPackage = agentPackages.get(packageId);
+        
+        if (!agentPackage) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Package not found' 
+            });
+        }
+        
+        // Mark as downloaded
+        agentPackage.downloaded = true;
+        agentPackage.downloadedAt = new Date().toISOString();
+        
+        // Create agent package zip with config
+        const packageContent = {
+            'agent.js': fs.readFileSync(path.join(__dirname, 'agent', 'agent.js'), 'utf8'),
+            'agent-config.json': JSON.stringify(agentPackage.config, null, 2),
+            'package.json': fs.readFileSync(path.join(__dirname, 'agent', 'package.json'), 'utf8'),
+            'install.bat': `@echo off
+echo Installing PC Monitor Agent...
+node install-service.js
+echo Agent installed successfully!
+pause`,
+            'uninstall.bat': `@echo off
+echo Uninstalling PC Monitor Agent...
+node uninstall-service.js
+echo Agent uninstalled successfully!
+pause`
+        };
+        
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="pc-monitor-agent-${agentPackage.pcId}.zip"`);
+        
+        // For now, return JSON config (in production, create actual ZIP)
+        res.json({
+            success: true,
+            package: agentPackage,
+            files: packageContent
+        });
+        
+        console.log(`📥 Agent package downloaded: ${agentPackage.pcId}`);
+        
+    } catch (error) {
+        console.error('Failed to download agent package:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+app.post('/api/revoke-agent/:pcId', (req, res) => {
+    try {
+        const { pcId } = req.params;
+        const agent = agents.get(pcId);
+        
+        if (!agent) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Agent not found' 
+            });
+        }
+        
+        // Send revoke message to agent
+        if (agent.ws && agent.ws.readyState === WebSocket.OPEN) {
+            agent.ws.send(JSON.stringify({
+                type: 'revoke',
+                timestamp: new Date().toISOString()
+            }));
+        }
+        
+        // Remove from agents
+        agents.delete(pcId);
+        
+        console.log(`🚫 Agent revoked: ${pcId}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Agent revoked successfully' 
+        });
+        
+    } catch (error) {
+        console.error('Failed to revoke agent:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+app.get('/api/agents-status', (req, res) => {
+    try {
+        const agentsStatus = Array.from(agents.entries()).map(([pcId, agent]) => ({
+            pcId,
+            status: agent.status,
+            lastSeen: agent.lastSeen,
+            systemInfo: agent.systemInfo,
+            errorCount: global.errorReports?.filter(e => e.pcId === pcId).length || 0
+        }));
+        
+        res.json({
+            success: true,
+            agents: agentsStatus,
+            totalAgents: agentsStatus.length
+        });
+        
+    } catch (error) {
+        console.error('Failed to get agents status:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
@@ -884,6 +1077,9 @@ app.listen(PORT, () => {
     console.log(`   POST /api/test-api-key - Test OpenRouter API key`);
     console.log(`   POST /api/save-api-key - Save OpenRouter API key`);
     console.log(`   GET  /api/api-key-status - Get API key status`);
+    console.log(`   GET  /api/agent-package/:packageId - Download agent package`);
+    console.log(`   POST  /api/create-agent-package - Create new agent package`);
+    console.log(`   POST  /api/revoke-agent/:pcId - Revoke agent access`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
     console.log(`   GET  /about - About page`);
@@ -891,5 +1087,151 @@ app.listen(PORT, () => {
     console.log(`   GET  /dashboard - System dashboard (alias)`);
     console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// WebSocket server for real-time agent communication
+const wss = new WebSocket.Server({ 
+    port: process.env.WS_PORT || 3001,
+    verifyClient: (info) => {
+        // Verify client authentication
+        const url = new URL(info.req.url, `http://${info.req.headers.host}`);
+        const pcId = url.searchParams.get('pcId');
+        const token = url.searchParams.get('token');
+        
+        const agent = agents.get(pcId);
+        if (agent && agent.token === token) {
+            return true;
+        }
+        
+        console.log(`❌ WebSocket authentication failed for PC: ${pcId}`);
+        return false;
+    }
+});
+
+wss.on('connection', (ws, req) => {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pcId = url.searchParams.get('pcId');
+    const token = url.searchParams.get('token');
+    
+    console.log(`🔗 Agent connected: ${pcId}`);
+    
+    const agent = agents.get(pcId);
+    if (agent) {
+        agent.ws = ws;
+        agent.lastSeen = new Date();
+    } else {
+        // New agent registration
+        agents.set(pcId, {
+            ws,
+            token,
+            lastSeen: new Date(),
+            systemInfo: null,
+            status: 'online'
+        });
+    }
+    
+    // Handle messages from agent
+    ws.on('message', (data) => {
+        try {
+            const message = JSON.parse(data);
+            handleAgentMessage(pcId, message);
+        } catch (error) {
+            console.error(`❌ Invalid message from ${pcId}:`, error);
+        }
+    });
+    
+    // Handle disconnection
+    ws.on('close', () => {
+        console.log(`🔌 Agent disconnected: ${pcId}`);
+        const agent = agents.get(pcId);
+        if (agent) {
+            agent.status = 'offline';
+            agent.ws = null;
+        }
+        
+        // Notify dashboard of disconnection
+        broadcastToDashboard({
+            type: 'agent_disconnected',
+            pcId,
+            timestamp: new Date().toISOString()
+        });
+    });
+    
+    // Send initial configuration
+    ws.send(JSON.stringify({
+        type: 'config',
+        config: {
+            heartbeatInterval: 30000,
+            errorQueueSize: 100
+        }
+    }));
+});
+
+// Handle messages from agents
+function handleAgentMessage(pcId, message) {
+    const agent = agents.get(pcId);
+    if (!agent) return;
+    
+    agent.lastSeen = new Date();
+    
+    switch (message.type) {
+        case 'heartbeat':
+            agent.status = 'online';
+            broadcastToDashboard({
+                type: 'agent_heartbeat',
+                pcId,
+                timestamp: message.timestamp
+            });
+            break;
+            
+        case 'error':
+            // Store error in global error reports
+            if (!global.errorReports) global.errorReports = [];
+            
+            const errorReport = {
+                id: Date.now(),
+                pcId,
+                errorType: message.errorType,
+                details: message.details,
+                timestamp: message.timestamp,
+                stack: message.stack,
+                status: 'pending'
+            };
+            
+            global.errorReports.push(errorReport);
+            
+            // Notify dashboard
+            broadcastToDashboard({
+                type: 'error_reported',
+                pcId,
+                error: errorReport
+            });
+            break;
+            
+        case 'system_info':
+            agent.systemInfo = message.systemInfo;
+            broadcastToDashboard({
+                type: 'agent_system_info',
+                pcId,
+                systemInfo: message.systemInfo
+            });
+            break;
+            
+        case 'pong':
+            // Handle ping response
+            break;
+            
+        default:
+            console.log(`📨 Unknown message type from ${pcId}:`, message.type);
+    }
+}
+
+// Broadcast messages to all dashboard clients
+function broadcastToDashboard(message) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
+}
 
 module.exports = app;

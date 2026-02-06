@@ -1101,9 +1101,9 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                         </div>
                         
                         <div style="padding: 1rem;">
-                            <!-- Create New PC Section -->
+                            <!-- Create New PC Agent Section -->
                             <div style="margin-bottom: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
-                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">Create New PC Agent</span></h4>
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">Create New PC Agent Package</span></h4>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                                     <input type="text" id="pcName" class="form-input" placeholder="PC Name (e.g., Office-PC, Laptop-01)">
                                     <input type="text" id="pcLocation" class="form-input" placeholder="Location (e.g., Office, Home)">
@@ -1122,8 +1122,39 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                     <textarea id="pcDescription" class="form-input" placeholder="Description (optional)" rows="3"></textarea>
                                 </div>
                                 <button id="createPcBtn" class="form-button" style="width: 100%;">
-                                    <i class="fas fa-plus"></i> Create PC Agent
+                                    <i class="fas fa-plus"></i> Create Agent Package
                                 </button>
+                            </div>
+                            
+                            <!-- Agent Package Download Section -->
+                            <div id="agentPackageSection" style="display: none; margin-bottom: 2rem; padding: 1rem; background: rgba(0, 136, 255, 0.05); border-radius: 4px; border-left: 3px solid #0088ff;">
+                                <h4 style="color: #0088ff; margin-bottom: 1rem;"><span class="blue-bold">Agent Package Ready</span></h4>
+                                <div style="margin-bottom: 1rem;">
+                                    <strong>PC ID:</strong> <span id="packagePcId"></span>
+                                </div>
+                                <div style="margin-bottom: 1rem;">
+                                    <strong>Package ID:</strong> <span id="packageId"></span>
+                                </div>
+                                <div style="margin-bottom: 1rem;">
+                                    <strong>Download URL:</strong> <span id="packageDownloadUrl"></span>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <button id="downloadPackageBtn" class="form-button" style="flex: 1;">
+                                        <i class="fas fa-download"></i> Download Package
+                                    </button>
+                                    <button id="copyPackageUrlBtn" class="form-button" style="flex: 1;">
+                                        <i class="fas fa-copy"></i> Copy Download URL
+                                    </button>
+                                </div>
+                                <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px;">
+                                    <h5 style="color: #00ff88; margin-bottom: 0.5rem;">Installation Instructions:</h5>
+                                    <ol style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin: 0; padding-left: 1.5rem;">
+                                        <li>Download the agent package</li>
+                                        <li>Extract to target PC</li>
+                                        <li>Run <code>install.bat</code> as Administrator</li>
+                                        <li>Agent will start automatically and connect to dashboard</li>
+                                    </ol>
+                                </div>
                             </div>
                             
                             <!-- PC Status Overview -->
@@ -1228,7 +1259,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.5 - finalPcName Error Fixed';
+        let currentVersion = 'v3.0.0 - Real PC Agent System';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2038,7 +2069,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         }
         
         // PC Management Functions
-        function createPcAgent() {
+        async function createPcAgent() {
             const pcName = document.getElementById('pcName').value;
             const pcLocation = document.getElementById('pcLocation').value;
             const pcOwner = document.getElementById('pcOwner').value;
@@ -2050,56 +2081,52 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 return;
             }
             
-            // Generate agent code
-            const agentCode = generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription);
-            
-            // Display the generated code
-            document.getElementById('agentCode').textContent = agentCode;
-            document.getElementById('agentCodeSection').style.display = 'block';
-            
-            // Store PC data
-            if (!window.pcs) {
-                window.pcs = [];
+            try {
+                showNotification('info', 'Creating Agent Package', 'Generating secure agent package...');
+                
+                const response = await fetch('/api/create-agent-package', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pcName,
+                        pcLocation,
+                        pcOwner,
+                        pcType,
+                        pcDescription
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show package download section
+                    document.getElementById('agentPackageSection').style.display = 'block';
+                    
+                    // Populate package information
+                    document.getElementById('packagePcId').textContent = result.pcId;
+                    document.getElementById('packageId').textContent = result.packageId;
+                    document.getElementById('packageDownloadUrl').textContent = result.downloadUrl;
+                    
+                    showNotification('success', 'Agent Package Created', `Package for ${pcName} created successfully`);
+                    
+                    // Clear form
+                    document.getElementById('pcName').value = '';
+                    document.getElementById('pcLocation').value = '';
+                    document.getElementById('pcOwner').value = '';
+                    document.getElementById('pcType').value = '';
+                    document.getElementById('pcDescription').value = '';
+                    
+                    console.log('🔧 Debug: Agent package created:', result);
+                } else {
+                    showNotification('error', 'Package Creation Failed', result.error || 'Unknown error occurred');
+                }
+                
+            } catch (error) {
+                console.error('🔧 Debug: Package creation error:', error);
+                showNotification('error', 'Package Creation Failed', 'Failed to create agent package');
             }
-            
-            const pcData = {
-                pcName,
-                pcLocation,
-                pcOwner,
-                pcType,
-                pcDescription,
-                createdAt: new Date().toISOString(),
-                status: 'pending',
-                agentCode
-            };
-            
-            window.pcs.push(pcData);
-            
-            showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
-            
-            // Debug: Log PC creation
-            console.log('🔧 Debug: PC Created:', pcName, {
-                location: pcLocation,
-                owner: pcOwner,
-                type: pcType,
-                description: pcDescription
-            });
-            console.log('🔧 Debug: Generated Agent Code:', agentCode.substring(0, 200) + '...');
-            console.log('🔧 Debug: All PCs:', window.pcs);
-            console.log('🔧 Debug: PC Status Storage:', global.pcStatus);
-            
-            // Refresh PC list
-            refreshPcList();
-            
-            // Clear form
-            document.getElementById('pcName').value = '';
-            document.getElementById('pcLocation').value = '';
-            document.getElementById('pcOwner').value = '';
-            document.getElementById('pcType').value = '';
-            document.getElementById('pcDescription').value = '';
-            
-            // Refresh PC list
-            refreshPcList();
         }
         
         function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
@@ -2157,19 +2184,74 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             showNotification('success', 'Agent Downloaded', `Agent file downloaded as ${pcName}-error-agent.html`);
         }
         
+        async function downloadAgentPackage() {
+            const packageId = document.getElementById('packageId').textContent;
+            const pcId = document.getElementById('packagePcId').textContent;
+            
+            if (!packageId) {
+                showNotification('error', 'Download Failed', 'No package available to download');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/agent-package/${packageId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Create downloadable content
+                    const packageContent = JSON.stringify(result.files, null, 2);
+                    const blob = new Blob([packageContent], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create download link
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `pc-monitor-agent-${pcId}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showNotification('success', 'Package Downloaded', `Agent package downloaded as pc-monitor-agent-${pcId}.json`);
+                } else {
+                    showNotification('error', 'Download Failed', result.error || 'Package not found');
+                }
+                
+            } catch (error) {
+                console.error('🔧 Debug: Package download error:', error);
+                showNotification('error', 'Download Failed', 'Failed to download agent package');
+            }
+        }
+        
+        async function copyPackageUrl() {
+            const packageUrl = document.getElementById('packageDownloadUrl').textContent;
+            
+            if (!packageUrl) {
+                showNotification('error', 'Copy Failed', 'No package URL available to copy');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(window.location.origin + packageUrl);
+                showNotification('success', 'URL Copied', 'Package download URL copied to clipboard');
+            } catch (error) {
+                showNotification('error', 'Copy Failed', 'Failed to copy package URL: ' + error.message);
+            }
+        }
+        
         async function refreshPcList() {
             try {
                 console.log('🔧 Debug: Fetching PC status...');
-                const response = await fetch('/api/pc-status');
+                const response = await fetch('/api/agents-status');
                 const data = await response.json();
                 
-                console.log('🔧 Debug: PC status response:', data);
+                console.log('🔧 Debug: Agents status response:', data);
                 
                 if (data.success) {
-                    console.log('🔧 Debug: Updating PC UI with:', data.pcStats);
-                    updatePcStatusCards(data.pcStats);
-                    updatePcTable(data.pcStats);
-                    updateRegisteredPcTable(data.pcStats);
+                    console.log('🔧 Debug: Updating PC UI with:', data.agents);
+                    updatePcStatusCards(data.agents);
+                    updatePcTable(data.agents);
+                    updateRegisteredPcTable(data.agents);
                 } else {
                     showNotification('error', 'PC Status Error', 'Failed to load PC status');
                 }
@@ -2276,7 +2358,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.5 - finalPcName Error Fixed');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v3.0.0 - Real PC Agent System');
             
             // Update version badge
             updateVersionBadge();
@@ -2332,6 +2414,18 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                         this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
                     }, 1000);
                 });
+            }
+            
+            // Agent package buttons
+            const downloadPackageBtn = document.getElementById('downloadPackageBtn');
+            const copyPackageUrlBtn = document.getElementById('copyPackageUrlBtn');
+            
+            if (downloadPackageBtn) {
+                downloadPackageBtn.addEventListener('click', downloadAgentPackage);
+            }
+            
+            if (copyPackageUrlBtn) {
+                copyPackageUrlBtn.addEventListener('click', copyPackageUrl);
             }
             
             // Chat functionality
