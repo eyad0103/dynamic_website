@@ -972,16 +972,16 @@
                                             <div class="message-time">Just now</div>
                                         </div>
                                         <div class="message-content">
-                                            **Bold Blue** Welcome! I'm your specialized AI Error Analysis Assistant. I provide thorough analysis and actionable solutions for technical problems.
+                                            <span class="blue-bold">Welcome!</span> I'm your specialized AI Error Analysis Assistant. I provide thorough analysis and actionable solutions for technical problems.
                                             <br><br>
-                                            **Green** My capabilities include:
-                                            <br>• **Green** Deep error analysis and debugging
-                                            <br>• **Green** Actionable fix suggestions
-                                            <br>• **Green** System architecture insights
-                                            <br>• **Green** Performance optimization recommendations
-                                            <br>• **Red** Security vulnerability identification
+                                            <span class="green-bold">My capabilities include:</span>
+                                            <br>• <span class="green-bold">Deep error analysis and debugging</span>
+                                            <br>• <span class="green-bold">Actionable fix suggestions</span>
+                                            <br>• <span class="green-bold">System architecture insights</span>
+                                            <br>• <span class="green-bold">Performance optimization recommendations</span>
+                                            <br>• <span class="red-bold">Security vulnerability identification</span>
                                             <br><br>
-                                            **Bold Blue** How can I help you today?
+                                            <span class="blue-bold">How can I help you today?</span>
                                         </div>
                                     </div>
                                 </div>
@@ -995,22 +995,22 @@
                             </div>
                             
                             <div style="margin-top: 1rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
-                                <h4 style="color: #00ff88; margin-bottom: 0.5rem;">**Bold Blue** AI Error Analysis Specialist</h4>
+                                <h4 style="color: #00ff88; margin-bottom: 0.5rem;"><span class="blue-bold">AI Error Analysis Specialist</span></h4>
                                 <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
                                     <div style="margin-bottom: 0.5rem;">
-                                        <strong>🤖 **Bold Blue** Thorough Error Analysis:</strong> Deep technical examination of application errors
+                                        <strong>🤖 <span class="blue-bold">Thorough Error Analysis:</span></strong> Deep technical examination of application errors
                                     </div>
                                     <div style="margin-bottom: 0.5rem;">
-                                        <strong>🔍 **Green** Actionable Solutions:</strong> Step-by-step troubleshooting guidance
+                                        <strong>🔍 <span class="green-bold">Actionable Solutions:</span></strong> Step-by-step troubleshooting guidance
                                     </div>
                                     <div style="margin-bottom: 0.5rem;">
-                                        <strong>📊 **Green** System Insights:</strong> Architecture and performance analysis
+                                        <strong>📊 <span class="green-bold">System Insights:</span></strong> Architecture and performance analysis
                                     </div>
                                     <div style="margin-bottom: 0.5rem;">
-                                        <strong>�️ **Red** Security Focus:</strong> Vulnerability identification and fixes
+                                        <strong>🛡️ <span class="red-bold">Security Focus:</span></strong> Vulnerability identification and fixes
                                     </div>
                                     <div style="margin-bottom: 0.5rem;">
-                                        <strong>💬 **Green** Clear Communication:</strong> Human-readable explanations with color coding
+                                        <strong>💬 <span class="green-bold">Clear Communication:</span></strong> Human-readable explanations with color coding
                                     </div>
                                 </div>
                             </div>
@@ -1750,25 +1750,34 @@
             // Convert markdown-style formatting to HTML
             let formatted = escapeHtml(response);
             
-            // Convert **Bold Blue** to blue bold text
+            // First, handle the color-coded formatting more carefully
+            // Look for patterns like "**Bold Blue** text" and convert to colored spans
+            
+            // Replace **Bold Blue** text patterns
+            formatted = formatted.replace(/\*\*Bold Blue\*\* (.*?)(?=\*\*|$)/g, '<span class="blue-bold">$1</span>');
+            
+            // Replace **Green** text patterns  
+            formatted = formatted.replace(/\*\*Green\*\* (.*?)(?=\*\*|$)/g, '<span class="green-bold">$1</span>');
+            
+            // Replace **Red** text patterns
+            formatted = formatted.replace(/\*\*Red\*\* (.*?)(?=\*\*|$)/g, '<span class="red-bold">$1</span>');
+            
+            // Handle remaining **text** patterns (default to blue)
             formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="blue-bold">$1</span>');
             
-            // Convert **Green** to green bold text  
-            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="green-bold">$1</span>');
+            // Convert bullet points
+            formatted = formatted.replace(/• (.*?)(?=\n|$)/g, '<li>$1</li>');
             
-            // Convert **Red** to red bold text
-            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="red-bold">$1</span>');
+            // Wrap consecutive <li> tags in <ul>
+            formatted = formatted.replace(/(<li>.*?<\/li>)(\s*<li>.*?<\/li>)+/g, function(match) {
+                return '<ul>' + match + '</ul>';
+            });
             
             // Convert line breaks to <br>
             formatted = formatted.replace(/\n/g, '<br>');
             
-            // Convert bullet points
-            formatted = formatted.replace(/• (.*)/g, '<li>$1</li>');
-            formatted = formatted.replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>');
-            formatted = formatted.replace(/<\/ul><ul>/g, '');
-            
-            // Convert numbered lists
-            formatted = formatted.replace(/^\d+\. (.*)/gm, '<li>$1</li>');
+            // Clean up any remaining formatting issues
+            formatted = formatted.replace(/\*\*/g, '');
             
             return formatted;
         }
@@ -1782,14 +1791,14 @@
                         <div class="message-time">Just now</div>
                     </div>
                     <div class="message-content">
-                        **Bold Blue** Chat cleared! I'm your specialized AI Error Analysis Assistant. I can help you with:
+                        <span class="blue-bold">Chat cleared!</span> I'm your specialized AI Error Analysis Assistant. I can help you with:
                         <br><br>
-                        • **Green** Thorough error analysis and debugging
-                        • **Green** Actionable fix suggestions  
-                        • **Green** System architecture insights
-                        • **Red** Security vulnerability identification
+                        • <span class="green-bold">Thorough error analysis and debugging</span>
+                        • <span class="green-bold">Actionable fix suggestions</span>  
+                        • <span class="green-bold">System architecture insights</span>
+                        • <span class="red-bold">Security vulnerability identification</span>
                         <br><br>
-                        How can I assist you today?
+                        <span class="blue-bold">How can I assist you today?</span>
                     </div>
                 </div>
             `;
