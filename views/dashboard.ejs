@@ -1196,7 +1196,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.0 - Final Tab Fixes Complete';
+        let currentVersion = 'v2.2.0 - All Issues Resolved';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2026,8 +2026,8 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             document.getElementById('agentCodeSection').style.display = 'block';
             
             // Store PC data
-            if (!window.pcs) {
-                window.pcs = [];
+            if (!global.pcs) {
+                global.pcs = [];
             }
             
             const pcData = {
@@ -2041,7 +2041,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 agentCode
             };
             
-            window.pcs.push(pcData);
+            global.pcs.push(pcData);
             
             showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
             
@@ -2053,8 +2053,11 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 description: finalPcDescription
             });
             console.log('🔧 Debug: Generated Agent Code:', agentCode.substring(0, 200) + '...');
-            console.log('🔧 Debug: All PCs:', window.pcs);
+            console.log('🔧 Debug: All PCs:', global.pcs);
             console.log('🔧 Debug: PC Status Storage:', global.pcStatus);
+            
+            // Refresh PC list
+            refreshPcList();
             
             // Clear form
             document.getElementById('pcName').value = '';
@@ -2241,7 +2244,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.0 - Final Tab Fixes Complete');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.0 - All Issues Resolved');
             
             // Update version badge
             updateVersionBadge();
