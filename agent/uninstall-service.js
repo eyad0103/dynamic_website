@@ -1,3 +1,10 @@
+#!/usr/bin/env node
+
+/**
+ * Windows Service Uninstaller for PC Monitor Agent
+ * Removes the agent service completely
+ */
+
 const Service = require('node-windows').Service;
 const path = require('path');
 
@@ -7,9 +14,10 @@ const svc = new Service({
     script: path.join(__dirname, 'agent.js')
 });
 
-// Uninstall the service
+// Listen for the "uninstall" event
 svc.on('uninstall', () => {
-    console.log('Service uninstalled successfully');
+    console.log('✅ PC Monitor Agent service uninstalled successfully!');
+    console.log('🔄 The agent will no longer start on boot.');
 });
 
 // Uninstall the service

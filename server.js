@@ -610,12 +610,19 @@ if (!global.pcStatus) {
     global.pcStatus = {};
 }
 
-// Error Report Endpoint
+// Agent Error Reporting Endpoint
 app.post('/api/error-report', async (req, res) => {
-    const { pcName, errorCount, lastError, timestamp, userAgent, url, appVersion, agentVersion } = req.body;
-    
     try {
-        console.log('📡 Received error report from:', pcName);
+        const { pcId, appName, errorType, message, stackTrace, severity, timestamp, systemInfo } = req.body;
+        
+        if (!pcId || !message) {
+            return res.status(400).json({
+                success: false,
+                error: 'PC ID and error message are required'
+            });
+        }
+        
+        console.log('📡 Received error report from:', pcId);
         
         // Store error report in memory (in production, this would go to database)
         if (!global.errorReports) {
@@ -623,22 +630,24 @@ app.post('/api/error-report', async (req, res) => {
         }
         
         const report = {
-            pcName,
-            errorCount,
-            lastError,
-            timestamp,
-            userAgent,
-            url,
-            appVersion,
-            agentVersion,
-            receivedAt: new Date().toISOString()
+            id: Date.now().toString(),
+            pcId,
+            appName: appName || 'Unknown',
+            errorType: errorType || 'application_error',
+            message,
+            stackTrace: stackTrace || '',
+            severity: severity || 'error',
+            timestamp: timestamp || new Date().toISOString(),
+            systemInfo: systemInfo || {},
+            receivedAt: new Date().toISOString(),
+            status: 'pending_analysis'
         };
         
         global.errorReports.push(report);
         
-        // Keep only last 100 reports per PC
-        if (global.errorReports.length > 100) {
-            global.errorReports = global.errorReports.slice(-100);
+        // Keep only last 1000 reports
+        if (global.errorReports.length > 1000) {
+            global.errorReports = global.errorReports.slice(-1000);
         }
         
         // Update PC status
@@ -646,87 +655,42 @@ app.post('/api/error-report', async (req, res) => {
             global.pcStatus = {};
         }
         
-        global.pcStatus[pcName] = {
-            pcName: pcName,
-            status: 'online',
-            errorCount: errorCount || 0,
-            lastError: lastError || null,
-            lastReportSent: new Date().toISOString(),
-            agentVersion: agentVersion || 'v1.0.0',
-            appVersion: appVersion || 'Unknown'
+        if (!global.pcStatus[pcId]) {
+            global.pcStatus[pcId] = {
+                pcId,
+                status: 'online',
+                lastSeen: new Date().toISOString(),
+                errorCount: 0,
+                systemInfo: systemInfo || {}
+            };
+        }
+        
+        global.pcStatus[pcId].lastSeen = new Date().toISOString();
+        global.pcStatus[pcId].errorCount = (global.pcStatus[pcId].errorCount || 0) + 1;
+        global.pcStatus[pcId].lastError = {
+            message,
+            severity,
+            timestamp
         };
         
-        console.log('🔧 Updated PC status for:', pcName, global.pcStatus[pcName]);
+        console.log('🔧 Updated PC status for:', pcId, global.pcStatus[pcId]);
         
         // Send to AI for analysis (if API key is configured)
         if (process.env.OPENROUTER_API_KEY) {
-            try {
-                const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
-                        'X-Title': 'Error Analysis'
-                    },
-                    body: JSON.stringify({
-                        model: 'anthropic/claude-3-haiku',
-                        messages: [
-                            {
-                                role: 'system',
-                                content: `Analyze this application error and provide actionable fixes:
-
-**IMPORTANT: Only analyze actual application errors, bugs, or technical issues. Ignore the following:**
-- Gaming content, news articles, general text, or non-error information
-- Fortnite or other game-related content (unless it's causing actual technical errors)
-- Marketing materials or promotional content
-- User interface descriptions or design feedback
-- General conversation or chat messages
-
-**Focus on:**
-1. Root cause analysis of the technical error
-2. Step-by-step fix instructions
-3. Prevention recommendations
-4. Code examples if applicable
-
-**Error Details:**
-App: ${lastError.appName || 'Unknown'}
-Error: ${lastError.details || 'Unknown'}
-User: ${lastError.userAgent || 'Unknown'}
-URL: ${lastError.url || 'Unknown'}
-Timestamp: ${lastError.timestamp || 'Unknown'}
-
-Please provide:
-1. Root cause analysis
-2. Step-by-step fix instructions
-3. Prevention recommendations
-4. Code examples if applicable`
-                            }
-                        ],
-                        max_tokens: 500,
-                        temperature: 0.3
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('🤖 AI Analysis completed for:', pcName);
-                    
-                    // Store AI analysis with the error report
-                    if (data.choices && data.choices[0]) {
-                        report.aiAnalysis = data.choices[0].message.content;
-                    }
-                }
-                
-            } catch (error) {
-                console.error('❌ AI Analysis failed for:', pcName, error.message);
-            }
+            setTimeout(() => analyzeError(report), 1000);
         }
+        
+        // Notify dashboard
+        broadcastToDashboard({
+            type: 'error_reported',
+            pcId,
+            error: report
+        });
         
         res.json({
             success: true,
             message: 'Error report received and processed',
-            reportId: report.timestamp
+            reportId: report.id
         });
         
     } catch (error) {
@@ -737,6 +701,108 @@ Please provide:
         });
     }
 });
+
+// AI Error Analysis Function
+async function analyzeError(report) {
+    try {
+        console.log('🤖 Analyzing error:', report.id);
+        
+        const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                'X-Title': 'AI Error Analysis Specialist'
+            },
+            body: JSON.stringify({
+                model: 'anthropic/claude-3-haiku',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are an expert AI Error Analysis Specialist with deep knowledge of application debugging, system architecture, and troubleshooting. Your expertise includes:
+
+**Phase 1 – AI Enhancement & Specialization:**
+• Analyze all incoming app errors thoroughly with technical precision
+• Provide clear explanations in human-readable form
+• Suggest actionable fixes when possible
+• Learn and adapt to various apps, systems, and error types
+• Maintain clarity and accessibility in all outputs
+
+**Visual/Color Guidance for Responses:**
+• **Objective headings** – Use **Bold Blue** formatting with asterisks
+• **Key actions/notes** – Use **Green** formatting with asterisks  
+• **Warnings/errors** – Use **Red** formatting with asterisks
+• **Explanations** – Use standard gray/light text
+
+**Response Format Guidelines:**
+1. Start with **Bold Blue** headings for main topics
+2. Use **Green** for actionable steps and successful outcomes
+3. Use **Red** for warnings, errors, or critical issues
+4. Use clear, accessible language for all explanations
+5. Provide specific, actionable fixes when possible
+6. Adapt responses based on the specific app/system context
+
+**Specialization Areas:**
+- JavaScript/Node.js errors
+- API and database issues
+- Frontend/backend integration problems
+- Performance and optimization
+- Security vulnerabilities
+- System architecture analysis
+
+Always provide structured, helpful responses that empower users to solve their technical problems effectively.`
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze this application error and provide actionable fixes:
+
+**Error Details:**
+PC ID: ${report.pcId}
+App: ${report.appName}
+Error Type: ${report.errorType}
+Message: ${report.message}
+Stack Trace: ${report.stackTrace}
+Severity: ${report.severity}
+Timestamp: ${report.timestamp}
+System Info: ${JSON.stringify(report.systemInfo, null, 2)}
+
+Please provide:
+1. **Root Cause Analysis** - What caused this error?
+2. **Step-by-Step Fix** - How to resolve it
+3. **Prevention** - How to avoid future occurrences
+4. **Impact Assessment** - Severity and system effects`
+                    }
+                ],
+                max_tokens: 800,
+                temperature: 0.3
+            })
+        });
+        
+        if (analysisResponse.ok) {
+            const data = await analysisResponse.json();
+            console.log('🤖 AI Analysis completed for:', report.id);
+            
+            // Store AI analysis with the error report
+            if (data.choices && data.choices[0]) {
+                report.aiAnalysis = data.choices[0].message.content;
+                report.status = 'analyzed';
+                
+                // Notify dashboard of analysis completion
+                broadcastToDashboard({
+                    type: 'error_analyzed',
+                    pcId: report.pcId,
+                    errorId: report.id,
+                    analysis: report.aiAnalysis
+                });
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ AI Analysis failed for:', report.id, error.message);
+        report.status = 'analysis_failed';
+    }
+}
 
 // PC Management Endpoints
 app.get('/api/pc-status', (req, res) => {
@@ -1013,6 +1079,63 @@ app.post('/api/revoke-agent/:pcId', (req, res) => {
     }
 });
 
+// Agent Registration Endpoint
+app.post('/api/register-agent', async (req, res) => {
+    try {
+        const { pcId, token, systemInfo } = req.body;
+        
+        if (!pcId || !token) {
+            return res.status(400).json({
+                success: false,
+                error: 'PC ID and token are required'
+            });
+        }
+        
+        // Validate token against existing packages
+        let validToken = false;
+        for (const [packageId, pkg] of agentPackages.entries()) {
+            if (pkg.pcId === pcId && pkg.token === token) {
+                validToken = true;
+                pkg.downloaded = true;
+                pkg.downloadedAt = new Date().toISOString();
+                break;
+            }
+        }
+        
+        if (!validToken) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid token or PC ID'
+            });
+        }
+        
+        // Register the agent
+        agents.set(pcId, {
+            pcId,
+            token,
+            systemInfo,
+            status: 'online',
+            lastSeen: new Date(),
+            registeredAt: new Date().toISOString()
+        });
+        
+        console.log(`🔗 Agent registered: ${pcId}`);
+        
+        res.json({
+            success: true,
+            message: 'Agent registered successfully',
+            pcId,
+            serverUrl: process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com'
+        });
+        
+    } catch (error) {
+        console.error('Failed to register agent:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 
 app.get('/api/agents-status', (req, res) => {
     try {
@@ -1082,52 +1205,44 @@ app.listen(PORT, () => {
 // WebSocket server for real-time agent communication
 const wss = new WebSocket.Server({ 
     port: process.env.WS_PORT || 3001,
-    verifyClient: (info) => {
-        // Verify client authentication
-        const url = new URL(info.req.url, `http://${info.req.headers.host}`);
-        const pcId = url.searchParams.get('pcId');
-        const token = url.searchParams.get('token');
-        
-        const agent = agents.get(pcId);
-        if (agent && agent.token === token) {
-            return true;
-        }
-        
-        console.log(`❌ WebSocket authentication failed for PC: ${pcId}`);
-        return false;
-    }
+    path: '/agent-ws'
 });
 
+console.log('🔌 WebSocket server started on port 3001');
+
+// Store agent connections
+const agentConnections = new Map();
+
+// Handle WebSocket connections
 wss.on('connection', (ws, req) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const pcId = url.searchParams.get('pcId');
-    const token = url.searchParams.get('token');
+    // Extract PC ID and token from headers
+    const pcId = req.headers['pc-id'];
+    const token = req.headers['token'];
     
-    console.log(`🔗 Agent connected: ${pcId}`);
+    console.log(`🔌 Agent connection attempt: ${pcId}`);
     
+    // Validate agent
     const agent = agents.get(pcId);
-    if (agent) {
-        agent.ws = ws;
-        agent.lastSeen = new Date();
-    } else {
-        // New agent registration
-        agents.set(pcId, {
-            ws,
-            token,
-            lastSeen: new Date(),
-            systemInfo: null,
-            status: 'online'
-        });
+    if (!agent || agent.token !== token) {
+        console.log(`❌ Invalid agent credentials: ${pcId}`);
+        ws.close(4001, 'Invalid credentials');
+        return;
     }
+    
+    // Store connection
+    agentConnections.set(pcId, ws);
+    agent.ws = ws;
+    agent.status = 'online';
+    agent.lastSeen = new Date();
+    
+    console.log(`✅ Agent connected: ${pcId}`);
     
     // Handle messages from agent
     ws.on('message', (data) => {
         try {
             const message = JSON.parse(data);
             handleAgentMessage(pcId, message);
-        } catch (error) {
-            console.error(`❌ Invalid message from ${pcId}:`, error);
-        }
+        } catch (error) {}
     });
     
     // Handle disconnection
