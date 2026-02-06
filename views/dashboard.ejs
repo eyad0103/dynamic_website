@@ -833,7 +833,15 @@
                     <form class="api-key-form" id="apiKeyForm">
                         <div class="form-group">
                             <label class="form-label" for="apiKey">OpenRouter API Key</label>
-                            <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." value="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">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." value="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" style="flex: 1;">
+                                <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.5rem 1rem;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.5rem 1rem;">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
                             <small style="color: rgba(0, 255, 136, 0.6); font-size: 0.8rem;">Your API key is stored securely and never exposed to the client</small>
                         </div>
 
@@ -860,8 +868,17 @@
                             1. Enter your OpenRouter API key above<br>
                             2. Click "Test API" to verify connectivity<br>
                             3. Click "Save Key" to store it securely<br>
-                            4. The system will automatically use this key for error analysis
+                            4. Click "Copy" to copy the key for error tracking agents<br>
+                            5. The system will automatically use this key for error analysis
                         </p>
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
+                            <h5 style="color: #00ff88; margin-bottom: 0.5rem; font-size: 0.9rem;">📋 Quick Copy for Error Agents</h5>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin: 0;">
+                                Click the "Copy" button above to copy your API key, then use it in your error tracking agent code:
+                            </p>
+                            <pre style="background: rgba(0, 0, 0, 0.5); padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; color: #00ff88; margin: 0.5rem 0;">
+startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR-API-KEY');</pre>
+                        </div>
                     </div>
                 </div>
 
@@ -1897,6 +1914,36 @@
             `;
         }
         
+        // API Key Management Functions
+        function toggleApiKeyVisibility() {
+            const apiKeyInput = document.getElementById('apiKey');
+            const toggleBtn = document.getElementById('toggleApiKeyBtn');
+            
+            if (apiKeyInput.type === 'password') {
+                apiKeyInput.type = 'text';
+                toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                apiKeyInput.type = 'password';
+                toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+        
+        function copyApiKey() {
+            const apiKeyInput = document.getElementById('apiKey');
+            const apiKey = apiKeyInput.value;
+            
+            if (!apiKey) {
+                showNotification('error', 'Copy Failed', 'No API key to copy');
+                return;
+            }
+            
+            navigator.clipboard.writeText(apiKey).then(() => {
+                showNotification('success', 'API Key Copied', 'API key copied to clipboard successfully');
+            }).catch(err => {
+                showNotification('error', 'Copy Failed', 'Failed to copy API key: ' + err.message);
+            });
+        }
+        
         // PC Management Functions
         function createPcAgent() {
             const pcName = document.getElementById('pcName').value;
@@ -2148,6 +2195,18 @@
             const refreshPcsBtn = document.getElementById('refreshPcsBtn');
             const copyAgentCodeBtn = document.getElementById('copyAgentCodeBtn');
             const downloadAgentBtn = document.getElementById('downloadAgentBtn');
+            
+            // API Key functionality
+            const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+            const copyApiKeyBtn = document.getElementById('copyApiKeyBtn');
+            
+            if (toggleApiKeyBtn) {
+                toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
+            }
+            
+            if (copyApiKeyBtn) {
+                copyApiKeyBtn.addEventListener('click', copyApiKey);
+            }
             
             if (createPcBtn) {
                 createPcBtn.addEventListener('click', createPcAgent);
