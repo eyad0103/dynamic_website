@@ -557,6 +557,15 @@ Always provide structured, helpful responses that empower users to solve their t
     }
 });
 
+// Initialize global storage
+if (!global.errorReports) {
+    global.errorReports = [];
+}
+
+if (!global.pcStatus) {
+    global.pcStatus = {};
+}
+
 // Error Report Endpoint
 app.post('/api/error-report', async (req, res) => {
     const { pcName, errorCount, lastError, timestamp, userAgent, url, appVersion, agentVersion } = req.body;
@@ -587,6 +596,23 @@ app.post('/api/error-report', async (req, res) => {
         if (global.errorReports.length > 100) {
             global.errorReports = global.errorReports.slice(-100);
         }
+        
+        // Update PC status
+        if (!global.pcStatus) {
+            global.pcStatus = {};
+        }
+        
+        global.pcStatus[pcName] = {
+            pcName: pcName,
+            status: 'online',
+            errorCount: errorCount || 0,
+            lastError: lastError || null,
+            lastReportSent: new Date().toISOString(),
+            agentVersion: agentVersion || 'v1.0.0',
+            appVersion: appVersion || 'Unknown'
+        };
+        
+        console.log('🔧 Updated PC status for:', pcName, global.pcStatus[pcName]);
         
         // Send to AI for analysis (if API key is configured)
         if (process.env.OPENROUTER_API_KEY) {
@@ -660,28 +686,14 @@ app.post('/api/error-report', async (req, res) => {
 // PC Management Endpoints
 app.get('/api/pc-status', (req, res) => {
     try {
-        const reports = global.errorReports || [];
-        const pcStats = {};
+        const pcStats = global.pcStatus || {};
         
-        // Group reports by PC name
-        reports.forEach(report => {
-            if (!pcStats[report.pcName]) {
-                pcStats[report.pcName] = {
-                    pcName: report.pcName,
-                    status: report.timestamp ? 'online' : 'offline',
-                    errorCount: report.errorCount || 0,
-                    lastError: report.lastError || null,
-                    lastReportSent: report.lastReportSent || null,
-                    agentVersion: report.agentVersion || 'v1.0.0',
-                    appVersion: report.appVersion || 'Unknown'
-                };
-            }
-        });
+        console.log('🔧 PC Status Request - Current PCs:', Object.keys(pcStats));
         
         res.json({
             success: true,
             pcStats: pcStats,
-            totalReports: reports.length
+            totalReports: global.errorReports ? global.errorReports.length : 0
         });
         
     } catch (error) {
