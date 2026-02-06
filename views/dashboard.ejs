@@ -1228,7 +1228,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.4 - Auto-Refresh Added';
+        let currentVersion = 'v2.2.5 - finalPcName Error Fixed';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2078,14 +2078,14 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
             
             // Debug: Log PC creation
-            console.log('🔧 Debug: PC Created:', finalPcName, {
-                location: finalPcLocation,
-                owner: finalPcOwner,
-                type: finalPcType,
-                description: finalPcDescription
+            console.log('🔧 Debug: PC Created:', pcName, {
+                location: pcLocation,
+                owner: pcOwner,
+                type: pcType,
+                description: pcDescription
             });
             console.log('🔧 Debug: Generated Agent Code:', agentCode.substring(0, 200) + '...');
-            console.log('🔧 Debug: All PCs:', global.pcs);
+            console.log('🔧 Debug: All PCs:', window.pcs);
             console.log('🔧 Debug: PC Status Storage:', global.pcStatus);
             
             // Refresh PC list
@@ -2276,7 +2276,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.4 - Auto-Refresh Added');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.5 - finalPcName Error Fixed');
             
             // Update version badge
             updateVersionBadge();
