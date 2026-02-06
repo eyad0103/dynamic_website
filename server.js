@@ -5,6 +5,9 @@ const WebSocket = require('ws');
 const crypto = require('crypto');
 const fs = require('fs');
 
+// Import run-credentials API
+const { generateAgentCodeWithApiKey } = require('./run-credentials-api.js');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -1803,13 +1806,7 @@ app.post('/api/register-agent', async (req, res) => {
     }
 });
 
-app.get('/api/agents-status', (req, res) => {
-    try {
-        const agentsStatus = Array.from(agents.entries()).map(([pcId, agent]) => ({
-            pcId,
-            status: agent.status,
-            lastSeen: agent.lastSeen,
-            systemInfo: agent.systemInfo,
+// ... (rest of the code remains the same)
             errorCount: global.errorReports?.filter(e => e.pcId === pcId).length || 0
         }));
         
@@ -1860,11 +1857,15 @@ app.listen(PORT, () => {
     console.log(`   POST /api/save-api-key - Save OpenRouter API key`);
     console.log(`   GET  /api/api-key-status - Get API key status`);
     console.log(`   GET  /api/agent-package/:packageId - Download agent package`);
-    console.log(`   POST /api/create-agent-package - Create new agent package`);
+    console.log(`   POST /api/create-pc - Create new PC`);
+    console.log(`   POST /api/register-agent - Register agent`);
     console.log(`   POST /api/revoke-agent/:pcId - Revoke agent access`);
     console.log(`   GET  /agent.js - Download agent file`);
     console.log(`   GET  /setup-instructions - Get setup instructions`);
     console.log(`   GET  /__deploy_test - Deployment test endpoint`);
+    console.log(`   POST /api/run-credentials - Run agent with credentials`);
+    console.log(`   GET  /api/credentials/:sessionId - Get credentials for session`);
+    console.log(`   POST /api/execute-agent/:sessionId - Execute agent code`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
     console.log(`   GET  /about - About page`);

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PC Agent Executor</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a2e; 
+            color: #00ff88; 
+            margin: 0;
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            padding: 20px;
+            background: rgba(0, 255, 136, 0.1); 
+            border-radius: 8px;
+        }
+        .status { 
+            background: rgba(0, 255, 136, 0.1); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border-left: 3px solid #00ff88;
+        }
+        .code-block { 
+            background: #000; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 2px solid #00ff88; 
+            margin: 20px 0; 
+            overflow-x: auto;
+        }
+        .btn { 
+            background: #00ff88; 
+            color: #000; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin: 10px 5px; 
+            display: inline-block;
+        }
+        .btn:hover { background: #00cc70; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .instructions { 
+            background: rgba(0, 255, 136, 0.1); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0;
+        }
+        pre { 
+            margin: 0; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log { 
+            background: rgba(0, 0, 0, 0.8); 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 10px 0; 
+            font-family: 'Courier New', monospace; 
+            font-size: 11px;
+            max-height: 200px; 
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 PC Agent Executor</h1>
+            <p>Agent execution environment with real-time connection monitoring</p>
+        </div>
+        
+        <div class="status">
+            <h3>📡 Connection Status</h3>
+            <p><strong>Status:</strong> <span id="connectionStatus">Loading...</span></p>
+            <p><strong>Last Seen:</strong> <span id="lastSeen">Never</span></p>
+            <p><strong>Session ID:</strong> <span id="sessionId">Loading...</span></p>
+        </div>
+        
+        <div class="code-block">
+            <h3>🔧 Agent Code</h3>
+            <pre id="agentCode">Loading...</pre>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Agent will automatically start and connect to dashboard</li>
+                <li>Connection status will update in real-time</li>
+                <li>Check your main dashboard for PC registration</li>
+            </ol>
+        </div>
+        
+        <div class="log" id="logContainer">
+            <h3>📝 Execution Log</h3>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session') || localStorage.getItem('session');
+        
+        if (!sessionId) {
+            document.getElementById('connectionStatus').textContent = 'No session found';
+            document.getElementById('sessionId').textContent = 'N/A';
+            document.getElementById('agentCode').textContent = 'No session found';
+            return;
+        }
+        
+        // Load session and agent code
+        fetch(`${window.location.origin}/api/credentials/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('sessionId').textContent = sessionId;
+                    
+                    // Load agent code
+                    fetch(`${window.location.origin}/api/execute-agent/${sessionId}`)
+                        .then(response => response.json())
+                        .then(execData => {
+                            if (execData.success) {
+                                document.getElementById('agentCode').textContent = execData.message || 'Agent code loaded';
+                                
+                                // Create and inject agent script
+                                const script = document.createElement('script');
+                                script.src = `${window.location.origin}/agent.js`;
+                                script.onload = function() {
+                                    log('✅ Agent script loaded');
+                                    startAgent();
+                                };
+                                script.onerror = function() {
+                                    log('❌ Failed to load agent script');
+                                };
+                                document.head.appendChild(script);
+                                
+                            } else {
+                                document.getElementById('agentCode').textContent = 'Failed to load agent code';
+                            }
+                        })
+                        .catch(error => {
+                            log('❌ Error loading agent code: ' + error.message);
+                        });
+                } else {
+                    document.getElementById('connectionStatus').textContent = 'Failed to load credentials';
+                    document.getElementById('sessionId').textContent = 'N/A';
+                    document.getElementById('agentCode').textContent = 'Failed to load credentials';
+                }
+            })
+            .catch(error => {
+                log('❌ Error loading credentials: ' + error.message);
+                document.getElementById('connectionStatus').textContent = 'Error loading credentials';
+            });
+        
+        function startAgent() {
+            // Get PC credentials from URL parameters or localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const pcId = urlParams.get('pc_id') || localStorage.getItem('pc_id');
+            const authToken = urlParams.get('auth_token') || localStorage.getItem('auth_token');
+            
+            if (pcId && authToken) {
+                log(`🚀 Starting agent for PC: ${pcId}`);
+                document.getElementById('connectionStatus').textContent = 'Starting agent...';
+                
+                // Initialize and start agent
+                if (typeof PCAgent !== 'undefined') {
+                    const agent = new PCAgent(pcId, authToken, window.location.origin);
+                    agent.start();
+                } else {
+                    log('❌ PCAgent class not available');
+                    document.getElementById('connectionStatus').textContent = 'Agent class not available';
+                }
+            } else {
+                log('⚠️ No PC credentials found');
+                document.getElementById('connectionStatus').textContent = 'No PC credentials found';
+            }
+        }
+        
+        function log(message) {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Update connection status periodically
+        setInterval(() => {
+            const pcId = urlParams.get('pc_id') || localStorage.getItem('pc_id');
+            const authToken = urlParams.get('auth_token') || localStorage.getItem('auth_token');
+            
+            if (pcId && authToken) {
+                // Check agent status by attempting registration
+                fetch(`${window.location.origin}/api/register-agent`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pc_id: pcId,
+                        auth_token: authToken,
+                        hostname: 'Agent Executor',
+                        OS: navigator.platform || 'Unknown',
+                        local_ip: 'Browser'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('connectionStatus').textContent = 'ONLINE';
+                        document.getElementById('lastSeen').textContent = 'Just now';
+                    } else {
+                        document.getElementById('connectionStatus').textContent = 'OFFLINE';
+                        document.getElementById('lastSeen').textContent = 'Connection failed';
+                    }
+                })
+                .catch(error => {
+                    log('Status check error: ' + error.message);
+                });
+            }
+        }, 5000); // Check every 5 seconds
+    </script>
+</body>
+</html>
