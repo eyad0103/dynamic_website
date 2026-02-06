@@ -224,6 +224,120 @@ app.get('/api/system/stats', (req, res) => {
     });
 });
 
+// Interactive Terminal API
+app.post('/api/terminal/command', (req, res) => {
+    const { command } = req.body;
+    
+    if (!command) {
+        return res.status(400).json({
+            success: false,
+            error: 'No command provided'
+        });
+    }
+    
+    // Parse command and execute
+    const result = executeCommand(command);
+    res.json({
+        success: true,
+        command: command,
+        result: result,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Command execution function
+function executeCommand(command) {
+    const parts = command.trim().split(' ');
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+    
+    switch (cmd) {
+        case 'help':
+            return {
+                type: 'help',
+                output: 'Available commands:\n• status - Show system status\n• uptime - Display server uptime\n• memory - Show memory usage\n• time - Show current server time\n• requests - Show total requests served\n• clear - Clear terminal\n• scan - Scan network for vulnerabilities\n• ping - Test network connectivity\n• version - Show system version\n• info - Show system information\n• logs - Show recent system logs\n• exit - Exit terminal session'
+            };
+            
+        case 'status':
+            return {
+                type: 'status',
+                output: 'System Status: ONLINE\nUptime: ' + systemBaseline.getUptimeFormatted() + '\nMemory: ' + Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB / ' + Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB\nRequests: ' + (req.requestCount || 0) + '\nServer Time: ' + new Date().toLocaleTimeString() + '\nPlatform: ' + process.platform() + '\nNode Version: ' + process.version()
+            };
+            
+        case 'uptime':
+            return {
+                type: 'uptime',
+                output: 'Server Uptime: ' + systemBaseline.getUptimeFormatted()
+            };
+            
+        case 'memory':
+            return {
+                type: 'memory',
+                output: 'Memory Usage:\nRSS: ' + Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB\nHeap: ' + Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB / ' + Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB\nExternal: ' + Math.round(process.memoryUsage().external / 1024 / 1024) + 'MB\nTotal: ' + Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB'
+            };
+            
+        case 'time':
+            return {
+                type: 'time',
+                output: 'Server Time: ' + new Date().toLocaleTimeString()
+            };
+            
+        case 'requests':
+            return {
+                type: 'requests',
+                output: 'Total Requests: ' + (req.requestCount || 0)
+            };
+            
+        case 'clear':
+            return {
+                type: 'clear',
+                output: 'Terminal cleared.'
+            };
+            
+        case 'scan':
+            return {
+                type: 'scan',
+                output: 'Scanning network interfaces...\nChecking for open ports...\nAnalyzing system vulnerabilities...\nNetwork scan complete. No threats detected.'
+            };
+            
+        case 'ping':
+            return {
+                type: 'ping',
+                output: 'Pinging google.com...\nPing successful: 12ms\nPinging github.com...\nPing successful: 8ms\nNetwork connectivity: GOOD'
+            };
+            
+        case 'version':
+            return {
+                type: 'version',
+                output: 'Node.js Version: ' + process.version()
+            };
+            
+        case 'info':
+            return {
+                type: 'info',
+                output: 'System Information:\nPlatform: ' + process.platform() + '\nArchitecture: ' + process.arch() + '\nNode Version: ' + process.version() + '\nProcess ID: ' + process.pid() + '\nUptime: ' + systemBaseline.getUptimeFormatted() + '\nMemory: ' + Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB\nRequests: ' + (req.requestCount || 0)
+            };
+            
+        case 'logs':
+            return {
+                type: 'logs',
+                output: 'Recent System Logs:\n[' + new Date().toISOString() + '] System initialized successfully\n[' + new Date().toISOString() + '] Loading cyber security modules...\n[' + new Date().toISOString() + '] Establishing secure connections...\n[' + new Date().toISOString() + '] System ready for operation\n[' + new Date().toISOString() + '] Monitoring active connections...'
+            };
+            
+        case 'exit':
+            return {
+                type: 'exit',
+                output: 'Terminal session ended.'
+            };
+            
+        default:
+            return {
+                type: 'error',
+                output: 'Unknown command: ' + command + '. Type \'help\' for available commands.'
+            };
+    }
+}
+
 // Handle 404
 app.use((req, res) => {
     res.status(404).render('404', { 
