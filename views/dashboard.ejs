@@ -846,6 +846,9 @@
         let filteredErrors = [];
         let currentVersion = 'v2.0.4 - FIXED';
         
+        // Global DOM elements
+        let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
+        
         function showTestResult(message, type) {
             const testResult = document.getElementById('testResult');
             testResult.style.display = 'block';
@@ -1179,13 +1182,14 @@
             // Update version badge
             updateVersionBadge();
             
-            const errorContainer = document.getElementById('errorContainer');
-            const searchInput = document.getElementById('searchInput');
-            const refreshBtn = document.getElementById('refreshBtn');
-            const totalErrorsEl = document.getElementById('totalErrors');
-            const pendingErrorsEl = document.getElementById('pendingErrors');
-            const analyzedErrorsEl = document.getElementById('analyzedErrors');
-            const failedErrorsEl = document.getElementById('failedErrors');
+            // Assign global DOM elements
+            errorContainer = document.getElementById('errorContainer');
+            searchInput = document.getElementById('searchInput');
+            refreshBtn = document.getElementById('refreshBtn');
+            totalErrorsEl = document.getElementById('totalErrors');
+            pendingErrorsEl = document.getElementById('pendingErrors');
+            analyzedErrorsEl = document.getElementById('analyzedErrors');
+            failedErrorsEl = document.getElementById('failedErrors');
             
             // Load initial errors
             loadErrors();
