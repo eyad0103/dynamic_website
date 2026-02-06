@@ -791,7 +791,7 @@
                     <button class="tab-button active" onclick="switchTab('errors', event)">
                         <i class="fas fa-exclamation-triangle"></i> Errors
                     </button>
-                    <button class="tab-button" onclick="switchTab('create-pc', event)">
+                    <button class="tab-button" onclick="switchTab('pcs', event)">
                         <i class="fas fa-plus"></i> Create PC Agent
                     </button>
                     <button class="tab-button" onclick="switchTab('registered-pcs', event)">
@@ -1196,7 +1196,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.9 - All Tab Issues Fixed';
+        let currentVersion = 'v2.2.0 - Final Tab Fixes Complete';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2241,7 +2241,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.9 - All Tab Issues Fixed');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.0 - Final Tab Fixes Complete');
             
             // Update version badge
             updateVersionBadge();
