@@ -890,10 +890,6 @@ Keep the explanation clear and actionable for a non-technical app owner.`;
     }
 }
 
-        requestedPath: req.path
-    });
-});
-
 // Agent management endpoints
 app.post('/api/create-agent-package', async (req, res) => {
     try {
@@ -1017,10 +1013,9 @@ app.post('/api/revoke-agent/:pcId', (req, res) => {
     }
 });
 
+
 app.get('/api/agents-status', (req, res) => {
     try {
-        console.log('🔧 Debug: /api/agents-status called');
-        
         const agentsStatus = Array.from(agents.entries()).map(([pcId, agent]) => ({
             pcId,
             status: agent.status,
@@ -1029,17 +1024,11 @@ app.get('/api/agents-status', (req, res) => {
             errorCount: global.errorReports?.filter(e => e.pcId === pcId).length || 0
         }));
         
-        console.log('🔧 Debug: agentsStatus array:', agentsStatus);
-        console.log('🔧 Debug: agents Map size:', agents.size);
-        
-        res.setHeader('Content-Type', 'application/json');
         res.json({
             success: true,
             agents: agentsStatus,
             totalAgents: agentsStatus.length
         });
-        
-        console.log('🔧 Debug: Sent JSON response');
         
     } catch (error) {
         console.error('Failed to get agents status:', error);
