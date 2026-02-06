@@ -4,22 +4,22 @@ A modern, fully-functional dynamic website built with Node.js, Express, and EJS 
 
 ## 🚀 Features
 
-- **Dynamic Content**: Server-side rendering with EJS templates
-- **RESTful API**: Complete API endpoints for data interaction
-- **Responsive Design**: Works perfectly on all devices
-- **Contact Form**: Functional form with validation and feedback
-- **Modern UI**: Professional design with smooth animations
-- **SEO Friendly**: Optimized meta tags and structure
-- **Error Handling**: Custom 404 page with helpful information
-- **Performance**: Fast loading and smooth interactions
+### **Dynamic Content**
+- **Server-side rendering** with EJS templates
+- **RESTful API** for data management and client-server communication
+- **Responsive design** that works perfectly on all devices
+- **Contact form** with validation and feedback
+- **Modern UI** with smooth animations and professional aesthetics
+- **Error handling** with custom 404 page
+- **Performance optimized** for fast loading and smooth interactions
 
-## 🛠️ Technology Stack
+### **🛠️ Technology Stack**
 
 - **Backend**: Node.js + Express.js
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Templating**: EJS for dynamic content
+- **Frontend**: HTML5 + CSS3 + JavaScript (ES6+)
+- **Templating**: EJS for dynamic content rendering
 - **Styling**: Modern CSS with animations and transitions
-- **Deployment**: GitHub + Render
+- **Deployment**: GitHub + Render (24/7 operation)
 
 ## 📁 Project Structure
 
@@ -28,13 +28,14 @@ dynamic-website/
 ├── package.json          # Dependencies and scripts
 ├── server.js            # Express server with routes
 ├── views/              # EJS templates
-│   ├── index.ejs       # Home page with posts
+│   ├── index.ejs       # Home page (now redirects to dashboard)
 │   ├── about.ejs       # About page with features
 │   ├── contact.ejs     # Contact page with form
-│   └── 404.ejs        # 404 error page
+│   ├── 404.ejs        # Error page
+│   └── dashboard.ejs   # Cyber system dashboard (main page)
 ├── public/             # Static assets
 │   ├── css/
-│   │   └── style.css  # Complete stylesheet
+│   │   └── style.css  # Complete stylesheet with cyber theme
 │   └── js/
 │       └── script.js   # Client-side JavaScript
 ├── .gitignore          # Git ignore file
@@ -47,11 +48,10 @@ dynamic-website/
 - Node.js 14+ installed
 - Git installed
 - GitHub account
-- Render account
+- Render account (for deployment)
 
 ### Local Development
-
-1. **Clone the repository**
+1. **Clone repository**
    ```bash
    git clone https://github.com/YOUR_USERNAME/dynamic-website.git
    cd dynamic-website
@@ -67,112 +67,115 @@ dynamic-website/
    npm start
    ```
 
-4. **Open your browser**
+4. **Open browser**
    Navigate to `http://localhost:3000`
 
 ### Production Deployment
-
-#### Deploy to Render (Recommended)
-
 1. **Push to GitHub**
    ```bash
    git add .
-   git commit -m "Deploy dynamic website"
+   git commit -m "Your commit message"
    git push origin main
    ```
 
-2. **Connect to Render**
-   - Go to [render.com](https://render.com)
-   - Click "New" → "Web Service"
-   - Connect your GitHub repository
-   - Configure build settings:
-     - **Build Command**: `npm install`
-     - **Start Command**: `npm start`
-     - **Node Version**: `14` or higher
-     - **Root Directory**: `/`
-
-3. **Deploy**
-   - Click "Create Web Service"
-   - Render will automatically build and deploy your site
-   - Your site will be live at `https://your-app-name.onrender.com`
+2. **Deploy to Render**
+   - Connect your GitHub repository to Render
+   - Configure build settings
+   - Deploy automatically on push to main branch
 
 ## 📡 API Endpoints
 
-### GET Endpoints
-- `GET /` - Home page with dynamic posts
-- `GET /about` - About page with features
-- `GET /contact` - Contact page with form
-- `GET /api/posts` - Get all posts as JSON
-- `GET /api/posts/:id` - Get specific post by ID
+### Pages
+- `GET /` → **Cyber Dashboard** (main page)
+- `GET /dashboard` → **Cyber Dashboard** (alias)
+- `GET /about` → About page with project information
+- `GET /contact` → Contact page with form
+- `GET /api/posts` → All posts as JSON
+- `GET /api/posts/:id` → Single post by ID as JSON
+- `POST /api/contact` → Contact form submission
 
-### POST Endpoints
-- `POST /api/contact` - Submit contact form
+### System APIs
+- `GET /api/system/status` → System status and metrics
   ```json
   {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "subject": "Project Inquiry",
-    "priority": "medium",
-    "message": "I'd like to discuss a project..."
+    "status": "online",
+    "uptime": "...",
+    "timestamp": "...",
+    "memory": {...},
+    "requests": N
+  }
+  ```
+- `GET /api/system/stats` → Detailed system statistics
+  ```json
+  {
+    "uptime": "...",
+    "memory": {
+      "rss": "XXMB",
+      "heapTotal": "XXMB", 
+      "heapUsed": "XXMB",
+      "external": "XXMB"
+    },
+    "requests": N,
+    "system": {
+      "nodeVersion": "vXX.X.X",
+      "platform": "linux",
+      "pid": XXX,
+      "uptime": "..."
+    }
   }
   ```
 
-## 🎨 Customization
+## 🎨 Cyber Dashboard Features
 
-### Adding New Pages
+The main page (`/`) now displays a **fully immersive cyber system dashboard** with:
 
-1. Create new EJS template in `views/` folder
-2. Add route in `server.js`:
-   ```javascript
-   app.get('/your-page', (req, res) => {
-       res.render('your-page', { 
-           title: 'Your Page',
-           message: 'Your message here'
-       });
-   });
-   ```
+### **Terminal Interface**
+- **Real-time system logs** with animated typing effect
+- **Live metrics display** (uptime, memory, requests, server time)
+- **Streaming console output** with timestamped messages
+- **System boot sequence** with professional animations
+- **Periodic status updates** (scanning, monitoring, syncing)
+- **Memory usage warnings** when thresholds are exceeded
 
-### Styling
+### **Visual Design**
+- **Cyberpunk/dark theme** with neon accents
+- **Terminal-style layout** with monospace fonts
+- **Grid background effects** for authentic hacker aesthetic
+- **Smooth animations** and transitions throughout
+- **Responsive design** that adapts to all screen sizes
+- **No static labels** - all data integrated into the interface
 
-- Edit `public/css/style.css` for custom styles
-- Uses CSS variables for easy theming
-- Responsive design with mobile-first approach
-- Modern animations and transitions
+### **Interactive Elements**
+- **Real-time data updates** from system APIs
+- **Live request counter** simulation
+- **Memory monitoring** with visual warnings
+- **Professional animations** and hover effects
+- **Mobile-optimized** terminal interface
 
-### JavaScript
+## � Customization
 
-- Edit `public/js/script.js` for client-side functionality
-- Modular structure with clear functions
-- Includes form validation, animations, and API calls
+### Easy Theming
+- **CSS variables** for consistent color scheme
+- **Modular components** for easy customization
+- **Responsive grid system** that adapts to content
+- **Animation presets** for different cyber effects
 
-## 🔧 Configuration
+### Performance Features
+- **Lazy loading** for optimal performance
+- **Efficient animations** using CSS transforms
+- **Optimized API calls** with proper error handling
+- **Memory-efficient** JavaScript implementation
 
-### Environment Variables
+## 🚀 Deployment
 
-Create a `.env` file in root directory (optional):
-```env
-PORT=3000
-NODE_ENV=production
-```
+The application is designed for **immediate deployment** to Render with zero configuration required:
 
-### Package.json Scripts
+- **Automatic builds** on every push to main branch
+- **Zero-downtime deployment** with proper health checks
+- **Environment variables** handled securely
+- **Static asset optimization** for fast loading
 
-- `npm start` - Start production server
-- `npm run dev` - Start development server with auto-reload
-
-## 📱 Responsive Design
-
-The website is fully responsive and works on:
-- **Desktop computers** (1200px+)
-- **Tablets** (768px - 1199px)
-- **Mobile devices** (320px - 767px)
-
-## 🚀 Performance Features
-
-- **Lazy Loading**: Animations trigger on scroll
-- **Form Validation**: Real-time client-side validation
-- **API Testing**: Built-in API testing functionality
-- **Error Handling**: Comprehensive error pages
+**Ready for production with enterprise-grade performance and reliability!**
 - **Optimized Assets**: Efficient CSS and JavaScript
 - **Smooth Animations**: 60fps transitions
 
