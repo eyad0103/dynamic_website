@@ -1118,7 +1118,7 @@
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.0';
+        let currentVersion = 'v2.1.1 - FIXED';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -1951,26 +1951,11 @@
         function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
             const websiteUrl = window.location.origin;
             
-            const agentCode = `<!-- Error Tracking Agent for ${pcName} -->
-<script src="${websiteUrl}/error-tracking-agent.js"></script>
-<script>
-    // Auto-start error tracking
-    startErrorTracking('${pcName}', '${websiteUrl}', 'your-api-key');
-    
-    // Optional: Set additional PC info
-    window.pcInfo = {
-        name: '${pcName}',
-        location: '${pcLocation}',
-        owner: '${pcOwner}',
-        type: '${pcType}',
-        description: '${pcDescription}',
-        createdAt: '${new Date().toISOString()}'
-    };
-</script>
-
-<!-- Add this to your target PC's HTML file to start error monitoring -->`;
-            
-            return agentCode;
+            return '<!-- Error Tracking Agent for ' + pcName + ' -->' +
+                   '<script src="' + websiteUrl + '/error-tracking-agent.js"><\/script>' +
+                   '<script>' +
+                   'startErrorTracking(\'' + pcName + '\', \'' + websiteUrl + '\', \'your-api-key\');' +
+                   '<\/script>';
         }
         
         function copyAgentCode() {
@@ -2079,7 +2064,7 @@
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.0 - Error Tracking Agents ready');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.1 - JavaScript errors fixed');
             
             // Update version badge
             updateVersionBadge();
