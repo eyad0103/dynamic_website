@@ -4,6 +4,7 @@ const crypto = require('crypto');
 // Store active credentials temporarily (in production, use Redis/database)
 const activeCredentials = new Map();
 
+function setupRunCredentialsAPI(app) {
 app.post('/api/run-credentials', (req, res) => {
     try {
         const { apiKey } = req.body;
@@ -305,5 +306,6 @@ function generateAgentCodeWithApiKey(apiKey) {
 </body>
 </html>`;
 }
+}
 
-module.exports = { generateAgentCodeWithApiKey };
+module.exports = { generateAgentCodeWithApiKey, setupRunCredentialsAPI };
