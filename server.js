@@ -498,7 +498,7 @@ app.get('/debug-api', (req, res) => {
     res.sendFile(__dirname + '/debug-api.html');
 });
 
-// AI Chat endpoint
+// AI Chat endpoint - Enhanced with better error handling and retry logic
 app.post('/api/chat', async (req, res) => {
     const { message } = req.body;
     
@@ -509,30 +509,38 @@ app.post('/api/chat', async (req, res) => {
         });
     }
     
-    try {
-        const openrouterApiKey = process.env.OPENROUTER_API_KEY;
-        
-        if (!openrouterApiKey) {
-            return res.status(500).json({
-                success: false,
-                error: 'OpenRouter API key not configured'
-            });
-        }
-        
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${openrouterApiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
-                'X-Title': 'AI Error Analysis Specialist'
-            },
-            body: JSON.stringify({
-                model: 'anthropic/claude-3-haiku',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `You are an expert AI Error Analysis Specialist with deep knowledge of application debugging, system architecture, and troubleshooting. Your expertise includes:
+    const startTime = Date.now();
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+        try {
+            const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+            
+            if (!openrouterApiKey) {
+                console.error('❌ OpenRouter API key not configured');
+                return res.status(500).json({
+                    success: false,
+                    error: 'AI service not configured'
+                });
+            }
+            
+            console.log(`🤖 AI Chat request (attempt ${retryCount + 1}/${maxRetries}):`, message.substring(0, 100));
+            
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${openrouterApiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                    'X-Title': 'AI Error Analysis Specialist'
+                },
+                body: JSON.stringify({
+                    model: 'anthropic/claude-3-haiku',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `You are an expert AI Error Analysis Specialist with deep knowledge of application debugging, system architecture, and troubleshooting. Your expertise includes:
 
 **Phase 1 – AI Enhancement & Specialization:**
 • Analyze all incoming app errors thoroughly with technical precision
@@ -564,40 +572,57 @@ app.post('/api/chat', async (req, res) => {
 - System architecture analysis
 
 Always provide structured, helpful responses that empower users to solve their technical problems effectively.`
-                    },
-                    {
-                        role: 'user',
-                        content: message
-                    }
-                ],
-                max_tokens: 800,
-                temperature: 0.3
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                        },
+                        {
+                            role: 'user',
+                            content: message
+                        }
+                    ],
+                    max_tokens: 800,
+                    temperature: 0.3
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                throw new Error('Invalid response format from OpenRouter API');
+            }
+            
+            const aiResponse = data.choices[0].message.content;
+            const responseTime = Date.now() - startTime;
+            
+            console.log(`✅ AI Chat response successful (${responseTime}ms)`);
+            
+            res.json({
+                success: true,
+                response: aiResponse,
+                responseTime: `${responseTime}ms`
+            });
+            return; // Success, exit retry loop
+            
+        } catch (error) {
+            retryCount++;
+            console.error(`❌ AI Chat attempt ${retryCount} failed:`, error.message);
+            
+            if (retryCount >= maxRetries) {
+                console.error('❌ All AI Chat retry attempts failed');
+                res.status(500).json({
+                    success: false,
+                    error: 'AI service temporarily unavailable',
+                    details: error.message,
+                    retryCount: retryCount
+                });
+                return;
+            }
+            
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
         }
-        
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            throw new Error('Invalid response format from OpenRouter API');
-        }
-        
-        const aiResponse = data.choices[0].message.content;
-        
-        res.json({
-            success: true,
-            response: aiResponse
-        });
-        
-    } catch (error) {
-        console.error('Chat API error:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
     }
 });
 
@@ -610,19 +635,30 @@ if (!global.pcStatus) {
     global.pcStatus = {};
 }
 
-// Agent Error Reporting Endpoint
+// Agent Error Reporting Endpoint - Enhanced with validation and logging
 app.post('/api/error-report', async (req, res) => {
     try {
         const { pcId, appName, errorType, message, stackTrace, severity, timestamp, systemInfo } = req.body;
         
+        // Enhanced validation
         if (!pcId || !message) {
+            console.warn('⚠️ Invalid error report - missing required fields:', { pcId: !!pcId, message: !!message });
             return res.status(400).json({
                 success: false,
                 error: 'PC ID and error message are required'
             });
         }
         
-        console.log('📡 Received error report from:', pcId);
+        // Validate PC is registered
+        if (!agents.has(pcId)) {
+            console.warn('⚠️ Error report from unregistered PC:', pcId);
+            return res.status(401).json({
+                success: false,
+                error: 'PC not registered. Please register the agent first.'
+            });
+        }
+        
+        console.log('📡 Received error report from:', pcId, '-', appName || 'Unknown', '-', message.substring(0, 100));
         
         // Store error report in memory (in production, this would go to database)
         if (!global.errorReports) {
@@ -644,6 +680,7 @@ app.post('/api/error-report', async (req, res) => {
         };
         
         global.errorReports.push(report);
+        console.log('💾 Error report stored, ID:', report.id);
         
         // Keep only last 1000 reports
         if (global.errorReports.length > 1000) {
@@ -658,39 +695,37 @@ app.post('/api/error-report', async (req, res) => {
         if (!global.pcStatus[pcId]) {
             global.pcStatus[pcId] = {
                 pcId,
+                pcName: systemInfo?.hostname || pcId,
                 status: 'online',
                 lastSeen: new Date().toISOString(),
                 errorCount: 0,
-                systemInfo: systemInfo || {}
+                lastError: null
             };
         }
         
         global.pcStatus[pcId].lastSeen = new Date().toISOString();
         global.pcStatus[pcId].errorCount = (global.pcStatus[pcId].errorCount || 0) + 1;
         global.pcStatus[pcId].lastError = {
-            message,
-            severity,
-            timestamp
+            message: report.message,
+            severity: report.severity,
+            timestamp: report.timestamp
         };
         
-        console.log('🔧 Updated PC status for:', pcId, global.pcStatus[pcId]);
+        console.log('🔧 Updated PC status for:', pcId, 'Error count:', global.pcStatus[pcId].errorCount);
         
-        // Send to AI for analysis (if API key is configured)
-        if (process.env.OPENROUTER_API_KEY) {
-            setTimeout(() => analyzeError(report), 1000);
-        }
-        
-        // Notify dashboard
-        broadcastToDashboard({
-            type: 'error_reported',
-            pcId,
-            error: report
+        // Trigger AI analysis asynchronously (don't wait for it)
+        analyzeError(report).catch(error => {
+            console.error('❌ AI Analysis failed for:', report.id, error.message);
         });
         
         res.json({
             success: true,
             message: 'Error report received and processed',
-            reportId: report.id
+            reportId: report.id,
+            pcStatus: {
+                errorCount: global.pcStatus[pcId].errorCount,
+                lastError: global.pcStatus[pcId].lastError
+            }
         });
         
     } catch (error) {
@@ -1079,60 +1114,110 @@ app.post('/api/revoke-agent/:pcId', (req, res) => {
     }
 });
 
-// Agent Registration Endpoint
+// Agent Registration Endpoint - Enhanced with robust validation and logging
 app.post('/api/register-agent', async (req, res) => {
     try {
         const { pcId, token, systemInfo } = req.body;
         
+        // Enhanced validation
         if (!pcId || !token) {
+            console.warn('⚠️ Registration attempt - missing required fields:', { pcId: !!pcId, token: !!token });
             return res.status(400).json({
                 success: false,
                 error: 'PC ID and token are required'
             });
         }
         
+        // Validate PC ID format
+        if (!pcId.match(/^PC-\d+-[a-z0-9]+$/)) {
+            console.warn('⚠️ Invalid PC ID format:', pcId);
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid PC ID format'
+            });
+        }
+        
+        // Validate token format
+        if (!token.match(/^[a-f0-9]{64}$/)) {
+            console.warn('⚠️ Invalid token format for PC:', pcId);
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid token format'
+            });
+        }
+        
+        console.log('🔍 Validating agent registration:', pcId);
+        
         // Validate token against existing packages
         let validToken = false;
+        let matchedPackage = null;
+        
         for (const [packageId, pkg] of agentPackages.entries()) {
             if (pkg.pcId === pcId && pkg.token === token) {
                 validToken = true;
+                matchedPackage = pkg;
                 pkg.downloaded = true;
                 pkg.downloadedAt = new Date().toISOString();
+                console.log('✅ Token validated for package:', packageId);
                 break;
             }
         }
         
         if (!validToken) {
+            console.warn('❌ Invalid token or PC ID:', pcId);
             return res.status(401).json({
                 success: false,
-                error: 'Invalid token or PC ID'
+                error: 'Invalid token or PC ID',
+                details: 'Please check your agent package credentials'
             });
+        }
+        
+        // Check if agent is already registered
+        if (agents.has(pcId)) {
+            console.log('🔄 Agent re-registration:', pcId);
+            // Update existing agent
+            const existingAgent = agents.get(pcId);
+            existingAgent.systemInfo = systemInfo;
+            existingAgent.lastSeen = new Date();
+            existingAgent.status = 'online';
+        } else {
+            console.log('🆕 New agent registration:', pcId);
         }
         
         // Register the agent
         agents.set(pcId, {
             pcId,
             token,
-            systemInfo,
+            systemInfo: systemInfo || {},
             status: 'online',
             lastSeen: new Date(),
-            registeredAt: new Date().toISOString()
+            registeredAt: new Date().toISOString(),
+            packageInfo: matchedPackage ? {
+                pcName: matchedPackage.pcName,
+                pcLocation: matchedPackage.pcLocation,
+                pcOwner: matchedPackage.pcOwner,
+                pcType: matchedPackage.pcType
+            } : null
         });
         
-        console.log(`🔗 Agent registered: ${pcId}`);
+        console.log(`🔗 Agent registered successfully: ${pcId}`);
+        console.log(`📊 Total registered agents: ${agents.size}`);
         
         res.json({
             success: true,
             message: 'Agent registered successfully',
             pcId,
-            serverUrl: process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com'
+            serverUrl: process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com',
+            registeredAt: new Date().toISOString(),
+            totalAgents: agents.size
         });
         
     } catch (error) {
-        console.error('Failed to register agent:', error);
+        console.error('❌ Failed to register agent:', error);
         res.status(500).json({
             success: false,
-            error: error.message
+            error: 'Registration failed due to server error',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
