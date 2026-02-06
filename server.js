@@ -25,6 +25,9 @@ const systemBaseline = {
 // Set the API key from the user
 process.env.OPENROUTER_API_KEY = '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';
 
+// Force redeploy for API key management - v2
+console.log('🔑 API Key Management: OpenRouter API key configured');
+
 // Request tracking middleware
 app.use((req, res, next) => {
     req.requestCount = (global.requestCount || 0) + 1;
@@ -412,10 +415,21 @@ app.post('/api/save-api-key', async (req, res) => {
 app.get('/api/api-key-status', (req, res) => {
     const apiKey = process.env.OPENROUTER_API_KEY;
     
+    console.log('🔑 API Key Status Check - Key exists:', !!apiKey);
+    
     res.json({
         success: true,
         configured: !!apiKey,
         maskedKey: apiKey ? apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4) : null
+    });
+});
+
+// Simple test endpoint
+app.get('/api/test-endpoint', (req, res) => {
+    res.json({
+        success: true,
+        message: 'API endpoints are working',
+        timestamp: new Date().toISOString()
     });
 });
 
