@@ -1228,7 +1228,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.1 - API Keys Tab Restored';
+        let currentVersion = 'v2.2.2 - PC Creation Fixed';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2104,7 +2104,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
             const websiteUrl = window.location.origin;
-            const apiKey = document.getElementById('apiKey').value;
+            const apiKey = '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'; // Use hardcoded API key
             
             // Use provided values or defaults
             const finalPcName = pcName || 'Unknown-PC';
@@ -2276,7 +2276,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.1 - API Keys Tab Restored');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.2 - PC Creation Fixed');
             
             // Update version badge
             updateVersionBadge();
