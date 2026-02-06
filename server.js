@@ -22,13 +22,15 @@ const systemBaseline = {
     }
 };
 
-// Request Count Middleware
-let requestCount = 0;
-const requestCounter = (req, res, next) => {
-    requestCount++;
-    req.requestCount = requestCount;
+// Set the API key from the user
+process.env.OPENROUTER_API_KEY = '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';
+
+// Request tracking middleware
+app.use((req, res, next) => {
+    req.requestCount = (global.requestCount || 0) + 1;
+    global.requestCount = req.requestCount;
     next();
-};
+});
 
 // Middleware
 app.use(cors());

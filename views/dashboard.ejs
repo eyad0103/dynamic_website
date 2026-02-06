@@ -533,10 +533,10 @@
             <!-- Tab Container -->
             <div class="tab-container">
                 <div class="tab-header">
-                    <button class="tab-button active" onclick="switchTab('errors')">
+                    <button class="tab-button active" onclick="switchTab('errors', event)">
                         <i class="fas fa-exclamation-triangle"></i> Errors
                     </button>
-                    <button class="tab-button" onclick="switchTab('api')">
+                    <button class="tab-button" onclick="switchTab('api', event)">
                         <i class="fas fa-key"></i> API Keys
                     </button>
                 </div>
@@ -650,7 +650,7 @@
         });
         
         // Tab switching
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -665,7 +665,9 @@
             document.getElementById(tabName + '-tab').classList.add('active');
             
             // Add active class to clicked button
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             
             // Check API status when switching to API tab
             if (tabName === 'api') {
@@ -679,16 +681,33 @@
             const apiStatusText = document.getElementById('apiStatusText');
             
             try {
-                const response = await fetch('/api/system/status');
+                const response = await fetch('/api/api-key-status');
                 const data = await response.json();
                 
-                // Check if API key is configured (this would be implemented on server)
-                apiStatus.className = 'api-status status-not-configured';
-                apiStatusText.textContent = 'API key not configured - Please set up your OpenRouter API key';
+                if (data.success) {
+                    if (data.configured) {
+                        apiStatus.className = 'api-status status-configured';
+                        apiStatusText.innerHTML = '<i class="fas fa-check-circle"></i> API key configured and working';
+                        
+                        // Show masked key
+                        if (data.maskedKey) {
+                            const maskedKeyDiv = document.createElement('div');
+                            maskedKeyDiv.style.cssText = 'color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;';
+                            maskedKeyDiv.textContent = 'Key: ' + data.maskedKey;
+                            apiStatus.appendChild(maskedKeyDiv);
+                        }
+                    } else {
+                        apiStatus.className = 'api-status status-not-configured';
+                        apiStatusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API key not configured';
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to check API status');
+                }
                 
             } catch (error) {
+                console.error('API status check failed:', error);
                 apiStatus.className = 'api-status status-not-configured';
-                apiStatusText.textContent = 'Unable to check API status';
+                apiStatusText.innerHTML = '<i class="fas fa-times-circle"></i> Unable to check API status';
             }
         }
         
