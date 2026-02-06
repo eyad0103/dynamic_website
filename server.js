@@ -316,6 +316,9 @@ app.post('/api/test-api-key', async (req, res) => {
     }
     
     try {
+        console.log('🔑 Testing API key:', apiKey.substring(0, 10) + '...');
+        console.log('📝 Test prompt:', testPrompt);
+        
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -337,12 +340,24 @@ app.post('/api/test-api-key', async (req, res) => {
             })
         });
         
+        console.log('📡 OpenRouter response status:', response.status);
+        console.log('📡 OpenRouter response headers:', Object.fromEntries(response.headers));
+        
         if (!response.ok) {
-            throw new Error(`API request failed: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('❌ OpenRouter API error:', errorText);
+            throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
         }
         
         const data = await response.json();
+        console.log('✅ OpenRouter response data:', data);
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid response format from OpenRouter API');
+        }
+        
         const aiResponse = data.choices[0].message.content;
+        console.log('🤖 AI response:', aiResponse);
         
         res.json({
             success: true,
@@ -350,7 +365,7 @@ app.post('/api/test-api-key', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('API key test failed:', error);
+        console.error('❌ API key test failed:', error);
         res.status(500).json({
             success: false,
             error: error.message
