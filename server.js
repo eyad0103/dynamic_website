@@ -631,21 +631,32 @@ app.post('/api/error-report', async (req, res) => {
                             {
                                 role: 'system',
                                 content: `Analyze this application error and provide actionable fixes:
-                                
-                                **Error Details:**
-                                App: ${lastError.appName || 'Unknown'}
-                                Error: ${lastError.details || 'Unknown'}
-                                User: ${lastError.userAgent || 'Unknown'}
-                                URL: ${lastError.url || 'Unknown'}
-                                Timestamp: ${lastError.timestamp || 'Unknown'}
-                                App Version: ${lastError.appVersion || 'Unknown'}
-                                PC: ${pcName}
-                                
-                                Please provide:
-                                1. Root cause analysis
-                                2. Step-by-step fix instructions
-                                3. Prevention recommendations
-                                4. Code examples if applicable`
+
+**IMPORTANT: Only analyze actual application errors, bugs, or technical issues. Ignore the following:**
+- Gaming content, news articles, general text, or non-error information
+- Fortnite or other game-related content (unless it's causing actual technical errors)
+- Marketing materials or promotional content
+- User interface descriptions or design feedback
+- General conversation or chat messages
+
+**Focus on:**
+1. Root cause analysis of the technical error
+2. Step-by-step fix instructions
+3. Prevention recommendations
+4. Code examples if applicable
+
+**Error Details:**
+App: ${lastError.appName || 'Unknown'}
+Error: ${lastError.details || 'Unknown'}
+User: ${lastError.userAgent || 'Unknown'}
+URL: ${lastError.url || 'Unknown'}
+Timestamp: ${lastError.timestamp || 'Unknown'}
+
+Please provide:
+1. Root cause analysis
+2. Step-by-step fix instructions
+3. Prevention recommendations
+4. Code examples if applicable`
                             }
                         ],
                         max_tokens: 500,

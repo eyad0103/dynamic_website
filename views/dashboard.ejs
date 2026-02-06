@@ -1196,7 +1196,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.5 - Registered PCs Tab Added';
+        let currentVersion = 'v2.1.7 - AI Analysis Filtered';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2241,7 +2241,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.5 - Registered PCs Tab Added');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.7 - AI Analysis Filtered');
             
             // Update version badge
             updateVersionBadge();
@@ -2354,7 +2354,31 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 downloadAgentBtn.addEventListener('click', downloadAgent);
             }
             
-            // Load initial PC status
+            // Tab switching functionality
+        function switchTab(tabName, event) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+            }
+            
+            console.log('🔧 Debug: Switched to tab:', tabName);
+        }
+        
+        // Load initial PC status
             refreshPcList();
         });
     </script>
