@@ -331,7 +331,7 @@
                         flex: 1; 
                         border-radius: 4px; 
                         width: 100%;
-                    " onkeypress="handleTerminalKey(event)">
+                    " onkeypress="handleTerminalKey(event)" onkeydown="handleTerminalKeyDown(event)">
                     <span id="terminalCursor" style="color: #00ff88;">_</span>
                 </div>
             </div>
@@ -531,6 +531,7 @@
                         historyIndex++;
                         terminalInput.value = commandHistory[historyIndex] || '';
                     }
+                }
                 }
             }
             
