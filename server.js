@@ -433,6 +433,11 @@ app.get('/api/test-endpoint', (req, res) => {
     });
 });
 
+// Debug page for testing
+app.get('/debug-api', (req, res) => {
+    res.sendFile(__dirname + '/debug-api.html');
+});
+
 // AI Analysis Function
 async function analyzeError(errorRecord) {
     try {

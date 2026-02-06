@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: #00ff88; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { background: #00ff88; color: #000; border: none; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .result { background: rgba(0, 255, 136, 0.1); padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: rgba(255, 0, 0, 0.1); color: #ff6b6b; }
+        .success { background: rgba(0, 255, 0, 0.1); color: #4caf50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Debug Test</h1>
+        
+        <h2>Test API Key Status</h2>
+        <button onclick="testApiStatus()">Check API Status</button>
+        <div id="statusResult" class="result">Click to test...</div>
+        
+        <h2>Test Tab Functionality</h2>
+        <button onclick="testTabSwitch()">Test Tab Switch</button>
+        <div id="tabResult" class="result">Click to test...</div>
+        
+        <h2>Debug Info</h2>
+        <div id="debugInfo" class="result">Loading...</div>
+    </div>
+
+    <script>
+        // Test API status
+        async function testApiStatus() {
+            const resultDiv = document.getElementById('statusResult');
+            resultDiv.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/api-key-status');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <strong>Status:</strong> ${data.success ? 'Success' : 'Failed'}<br>
+                    <strong>Configured:</strong> ${data.configured ? 'Yes' : 'No'}<br>
+                    <strong>Masked Key:</strong> ${data.maskedKey || 'None'}
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Test tab switching
+        function testTabSwitch() {
+            const resultDiv = document.getElementById('tabResult');
+            const debugDiv = document.getElementById('debugInfo');
+            
+            // Check if switchTab function exists
+            if (typeof switchTab === 'function') {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = 'switchTab function exists and is callable';
+                
+                // Try to call it
+                try {
+                    switchTab('api', { target: document.querySelector('.tab-button') });
+                    resultDiv.textContent += ' - Tab switch successful';
+                } catch (error) {
+                    resultDiv.innerHTML += '<br>Error calling switchTab: ' + error.message;
+                }
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'switchTab function not found';
+            }
+            
+            // Debug info
+            debugDiv.innerHTML = `
+                <strong>Window Location:</strong> ${window.location.href}<br>
+                <strong>switchTab function:</strong> ${typeof switchTab}<br>
+                <strong>checkApiStatus function:</strong> ${typeof checkApiStatus}<br>
+                <strong>Tab buttons:</strong> ${document.querySelectorAll('.tab-button').length} found
+            `;
+        }
+        
+        // Initialize debug info on load
+        window.addEventListener('DOMContentLoaded', function() {
+            testTabSwitch();
+        });
+    </script>
+</body>
+</html>
