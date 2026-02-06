@@ -863,6 +863,23 @@
                     </form>
 
                     <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">Generated Agent Code</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
+                            <strong>✅ API Key Automatically Included!</strong><br>
+                            Your generated code already contains your configured API key. Just copy and paste it into your target PC's HTML file.
+                        </p>
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
+                            <h5 style="color: #00ff88; margin-bottom: 0.5rem; font-size: 0.9rem;">📋 Simple Instructions</h5>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin: 0;">
+                                1. Click "Copy Code" button below<br>
+                                2. Paste at the end of your target HTML file (before &lt;/body&gt;)<br>
+                                3. Save and open the HTML file in browser<br>
+                                4. Check your dashboard for PC registration
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
                         <h4 style="color: #00ff88; margin-bottom: 0.5rem;">API Configuration Instructions</h4>
                         <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
                             1. Enter your OpenRouter API key above<br>
@@ -1090,9 +1107,20 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                 <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="green-bold">Generated Agent Code</span></h4>
                                 <div style="margin-bottom: 1rem;">
                                     <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
-                                        <span class="green-bold">Instructions:</span> Copy this code and add it to your target PC's HTML file:
+                                        <span class="green-bold">✅ API Key Automatically Included!</span><br>
+                                        Your generated code already contains your configured API key. Just copy and paste it into your target PC's HTML file.
                                     </p>
-                                    <pre id="agentCode" style="background: rgba(0, 0, 0, 0.7); padding: 1rem; border-radius: 4px; overflow-x: auto; color: #00ff88; font-family: 'Courier New', monospace; font-size: 0.9rem;"></pre>
+                                    <div style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
+                                        <h5 style="color: #00ff88; margin-bottom: 0.5rem; font-size: 0.9rem;">📋 Simple Steps:</h5>
+                                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin: 0;">
+                                            1. Click "Copy Code" button below<br>
+                                            2. Paste at the end of your target HTML file (before &lt;/body&gt;)<br>
+                                            3. Save and open the HTML file in browser<br>
+                                            4. Check your dashboard for PC registration
+                                        </p>
+                                    </div>
+                                </div>
+                                <pre id="agentCode" style="background: rgba(0, 0, 0, 0.7); padding: 1rem; border-radius: 4px; overflow-x: auto; color: #00ff88; font-family: 'Courier New', monospace; font-size: 0.9rem;"></pre>
                                 </div>
                                 <div style="display: flex; gap: 1rem;">
                                     <button id="copyAgentCodeBtn" class="form-button">
@@ -1135,7 +1163,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.1 - FIXED';
+        let currentVersion = 'v2.1.2 - Auto API Key';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -1997,11 +2025,12 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
             const websiteUrl = window.location.origin;
+            const apiKey = document.getElementById('apiKey').value;
             
             return '<!-- Error Tracking Agent for ' + pcName + ' -->' +
                    '<script src="' + websiteUrl + '/error-tracking-agent.js"><\/script>' +
                    '<script>' +
-                   'startErrorTracking(\'' + pcName + '\', \'' + websiteUrl + '\', \'your-api-key\');' +
+                   'startErrorTracking(\'' + pcName + '\', \'' + websiteUrl + '\', \'' + apiKey + '\');' +
                    '<\/script>';
         }
         
@@ -2111,7 +2140,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.1 - JavaScript errors fixed');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.2 - API key auto-included in agents');
             
             // Update version badge
             updateVersionBadge();
