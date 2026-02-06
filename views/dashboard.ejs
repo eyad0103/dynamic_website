@@ -801,7 +801,14 @@
         
         // Notification System
         function showNotification(type, title, message) {
+            console.log('🔔 Notification:', type, title, message);
+            
             const container = document.getElementById('notificationContainer');
+            if (!container) {
+                console.error('Notification container not found');
+                return;
+            }
+            
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
             
@@ -815,9 +822,12 @@
             
             container.appendChild(notification);
             
+            console.log('🔔 Notification added to container');
+            
             // Auto-remove after 5 seconds
             setTimeout(() => {
                 if (notification.parentElement) {
+                    console.log('🔔 Removing notification');
                     notification.remove();
                 }
             }, 5000);
@@ -827,12 +837,58 @@
             const badge = document.getElementById('versionBadge');
             if (badge) {
                 badge.textContent = currentVersion;
+                console.log('🏷️ Version updated to:', currentVersion);
+            } else {
+                console.log('❌ Version badge not found');
             }
         }
+        
+        // Test notification system
+        function testNotifications() {
+            console.log('🧪 Testing notification system...');
+            
+            // Test different notification types
+            setTimeout(() => {
+                showNotification('info', 'Test Info', 'This is an info notification');
+            }, 1000);
+            
+            setTimeout(() => {
+                showNotification('success', 'Test Success', 'This is a success notification');
+            }, 2000);
+            
+            setTimeout(() => {
+                showNotification('warning', 'Test Warning', 'This is a warning notification');
+            }, 3000);
+            
+            setTimeout(() => {
+                showNotification('error', 'Test Error', 'This is an error notification');
+            }, 4000);
+        }
+        
+        // Test tab switching
+        function testTabSwitching() {
+            console.log('🔄 Testing tab switching...');
+            
+            setTimeout(() => {
+                switchTab('errors', { target: document.querySelector('.tab-button:nth-child(2)') });
+            }, 1000);
+            
+            setTimeout(() => {
+                switchTab('api', { target: document.querySelector('.tab-button:last-child') });
+            }, 2000);
+        }
+        
+        // Auto-test on load
+        setTimeout(() => {
+            testNotifications();
+            testTabSwitching();
+        }, 2000);
         
         // Tab switching with better error handling
         function switchTab(tabName, event) {
             try {
+                console.log('🔄 Switching to tab:', tabName);
+                
                 // Hide all tabs
                 document.querySelectorAll('.tab-content').forEach(tab => {
                     tab.classList.remove('active');
@@ -847,8 +903,9 @@
                 const targetTab = document.getElementById(tabName + '-tab');
                 if (targetTab) {
                     targetTab.classList.add('active');
+                    console.log('✅ Tab found and activated:', tabName);
                 } else {
-                    console.error(`Tab "${tabName}" not found`);
+                    console.error(`❌ Tab "${tabName}" not found`);
                     showNotification('error', 'Tab Error', `Could not find tab: ${tabName}`);
                     return;
                 }
@@ -867,7 +924,7 @@
                 }
                 
             } catch (error) {
-                console.error('Tab switching error:', error);
+                console.error('❌ Tab switching error:', error);
                 showNotification('error', 'Tab Error', `Failed to switch to ${tabName}: ${error.message}`);
             }
         }
