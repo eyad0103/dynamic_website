@@ -459,6 +459,137 @@
             animation: spin 1s linear infinite;
         }
 
+        /* Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .notification-title {
+            color: #00ff88;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notification-close {
+            background: transparent;
+            border: none;
+            color: #00ff88;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification-close:hover {
+            opacity: 1;
+        }
+
+        .notification-body {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .notification-success {
+            border-color: #28a745;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .notification-success .notification-title {
+            color: #28a745;
+        }
+
+        .notification-error {
+            border-color: #dc3545;
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+        }
+
+        .notification-error .notification-title {
+            color: #dc3545;
+        }
+
+        .notification-info {
+            border-color: #007bff;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+        }
+
+        .notification-info .notification-title {
+            color: #007bff;
+        }
+
+        .version-badge {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -497,6 +628,18 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- Version Badge -->
+        <div class="version-badge" id="versionBadge">
+            v2.0.1
+        </div>
+        
+        <!-- Notification Container -->
+        <div class="notification-container" id="notificationContainer"></div>
+        
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+        </div>
         <header class="dashboard-header">
             <div class="header-content">
                 <h1 class="dashboard-title">
@@ -605,11 +748,18 @@
     </div>
 
     <script>
-        // AI Error Analysis Dashboard with API Key Management
+        // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
+        let currentVersion = 'v2.0.1';
         
         document.addEventListener('DOMContentLoaded', function() {
+            // Show welcome notification
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.0.1 is ready');
+            
+            // Update version badge
+            updateVersionBadge();
+            
             const errorContainer = document.getElementById('errorContainer');
             const searchInput = document.getElementById('searchInput');
             const refreshBtn = document.getElementById('refreshBtn');
@@ -649,29 +799,76 @@
             });
         });
         
-        // Tab switching
-        function switchTab(tabName, event) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
+        // Notification System
+        function showNotification(type, title, message) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
             
-            // Remove active class from all buttons
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('active');
-            });
+            notification.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${title}</div>
+                    <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+                </div>
+                <div class="notification-body">${message}</div>
+            `;
             
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
+            container.appendChild(notification);
             
-            // Add active class to clicked button
-            if (event && event.target) {
-                event.target.classList.add('active');
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function updateVersionBadge() {
+            const badge = document.getElementById('versionBadge');
+            if (badge) {
+                badge.textContent = currentVersion;
             }
-            
-            // Check API status when switching to API tab
-            if (tabName === 'api') {
-                checkApiStatus();
+        }
+        
+        // Tab switching with better error handling
+        function switchTab(tabName, event) {
+            try {
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.classList.remove('active');
+                });
+                
+                // Show selected tab
+                const targetTab = document.getElementById(tabName + '-tab');
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                } else {
+                    console.error(`Tab "${tabName}" not found`);
+                    showNotification('error', 'Tab Error', `Could not find tab: ${tabName}`);
+                    return;
+                }
+                
+                // Add active class to clicked button
+                if (event && event.target) {
+                    event.target.classList.add('active');
+                }
+                
+                // Show success notification
+                showNotification('info', 'Tab Switched', `Switched to ${tabName} tab`);
+                
+                // Check API status when switching to API tab
+                if (tabName === 'api') {
+                    checkApiStatus();
+                }
+                
+            } catch (error) {
+                console.error('Tab switching error:', error);
+                showNotification('error', 'Tab Error', `Failed to switch to ${tabName}: ${error.message}`);
             }
         }
         
@@ -696,9 +893,12 @@
                             maskedKeyDiv.textContent = 'Key: ' + data.maskedKey;
                             apiStatus.appendChild(maskedKeyDiv);
                         }
+                        
+                        showNotification('success', 'API Key Active', 'OpenRouter API key is configured and ready for error analysis');
                     } else {
                         apiStatus.className = 'api-status status-not-configured';
                         apiStatusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API key not configured';
+                        showNotification('warning', 'API Key Required', 'Please configure your OpenRouter API key to enable AI error analysis');
                     }
                 } else {
                     throw new Error(data.error || 'Failed to check API status');
@@ -708,6 +908,7 @@
                 console.error('API status check failed:', error);
                 apiStatus.className = 'api-status status-not-configured';
                 apiStatusText.innerHTML = '<i class="fas fa-times-circle"></i> Unable to check API status';
+                showNotification('error', 'Connection Error', 'Failed to check API status: ' + error.message);
             }
         }
         
