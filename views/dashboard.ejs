@@ -829,12 +829,8 @@
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.0.2';
+        let currentVersion = 'v2.0.3';
         
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.0.2 is ready');
-            
             // Update version badge
             updateVersionBadge();
             
@@ -1149,11 +1145,7 @@
             testResult.style.display = 'block';
             testResult.className = 'test-result test-' + type;
             testResult.textContent = message;
-            
-            if (type === 'loading') {
-                testResult.innerHTML = '<span class="loading-spinner"></span> ' + message;
             }
-        }
             
             function loadErrors() {
                 return fetch('/api/errors')
@@ -1206,12 +1198,6 @@
                 failedErrorsEl.textContent = failed;
             }
             
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-            
             function formatDate(timestamp) {
                 const date = new Date(timestamp);
                 return date.toLocaleString();
@@ -1225,45 +1211,12 @@
                     default: return 'Unknown';
                 }
             }
-        
-        // Test Functions
-        async function runApiTest() {
-            showNotification('info', 'API Test', 'Starting API connectivity tests...');
-            const resultsDiv = document.getElementById('testResultsContent');
             
-            try {
-                // Test system status API
-                const statusResponse = await fetch('/api/system/status');
-                const statusData = await statusResponse.json();
-                
-                // Test errors API
-                const errorsResponse = await fetch('/api/errors');
-                const errorsData = await errorsResponse.json();
-                
-                // Test API key status
-                const keyResponse = await fetch('/api/api-key-status');
-                const keyData = await keyResponse.json();
-                
-                const results = `
-                    <div style="margin-bottom: 1rem;">
-                        <strong>✅ System Status API:</strong> Working (${statusResponse.status})<br>
-                        <strong>✅ Errors API:</strong> Working (${errorsData.errors ? errorsData.errors.length : 0} errors)<br>
-                        <strong>✅ API Key Status:</strong> Working (${keyData.configured ? 'Configured' : 'Not configured'})
-                    </div>
-                `;
-                
-                resultsDiv.innerHTML = results;
-                showNotification('success', 'API Test Complete', 'All API endpoints are working correctly');
-                
-            } catch (error) {
-                resultsDiv.innerHTML = `<strong>❌ API Test Failed:</strong> ${error.message}`;
-                showNotification('error', 'API Test Failed', error.message);
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
-        }
-        
-        async function runErrorAnalysisTest() {
-            showNotification('info', 'Analysis Test', 'Testing AI error analysis...');
-            const resultsDiv = document.getElementById('testResultsContent');
             
             try {
                 // Create a test error
