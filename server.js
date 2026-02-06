@@ -438,6 +438,11 @@ app.get('/debug-api', (req, res) => {
     res.sendFile(__dirname + '/debug-api.html');
 });
 
+// Test notifications page
+app.get('/test-notifications', (req, res) => {
+    res.sendFile(__dirname + '/test-notifications.html');
+});
+
 // AI Analysis Function
 async function analyzeError(errorRecord) {
     try {
