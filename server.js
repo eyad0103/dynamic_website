@@ -26,7 +26,7 @@ const systemBaseline = {
 };
 
 // Set the API key from the user
-process.env.OPENROUTER_API_KEY = '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';
+process.env.OPENROUTER_API_KEY = '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';
 
 // Agent management system
 const agents = new Map(); // pcId -> { ws, token, lastSeen, systemInfo }
