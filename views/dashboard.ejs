@@ -1175,119 +1175,47 @@
             }
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.0.4 - JavaScript issues FIXED');
-            
-            // Update version badge
-            updateVersionBadge();
-            
-            // Assign global DOM elements
-            errorContainer = document.getElementById('errorContainer');
-            searchInput = document.getElementById('searchInput');
-            refreshBtn = document.getElementById('refreshBtn');
-            totalErrorsEl = document.getElementById('totalErrors');
-            pendingErrorsEl = document.getElementById('pendingErrors');
-            analyzedErrorsEl = document.getElementById('analyzedErrors');
-            failedErrorsEl = document.getElementById('failedErrors');
-            
-            // Load initial errors
-            loadErrors();
-            
-            // Check API status
-            checkApiStatus();
-            
-            // Auto-refresh every 30 seconds
-            setInterval(loadErrors, 30000);
-            
-            // Search functionality
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                filteredErrors = errors.filter(error => 
-                    error.appName.toLowerCase().includes(searchTerm) ||
-                    error.error.toLowerCase().includes(searchTerm) ||
-                    error.userInfo.toLowerCase().includes(searchTerm)
-                );
-                renderErrors();
-            });
-            
-            // Refresh button
-            refreshBtn.addEventListener('click', function() {
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
-                loadErrors().finally(() => {
-                    this.disabled = false;
-                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
-                });
-            });
-            
-            // Version tab refresh button
-            const refreshVersionBtn = document.getElementById('refreshVersionBtn');
-            if (refreshVersionBtn) {
-                refreshVersionBtn.addEventListener('click', function() {
-                    this.disabled = true;
-                    this.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
-                    updateVersionDetails();
-                    setTimeout(() => {
-                        this.disabled = false;
-                        this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
-                    }, 1000);
-                });
+        // Notification System
+        function showNotification(type, title, message) {
+            const container = document.getElementById('notificationContainer');
+            if (!container) {
+                console.error('Notification container not found');
+                return;
             }
-        });
-    </script>
-                console.log('🏷️ Version updated to:', currentVersion);
+            
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            
+            notification.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${title}</div>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+                <div class="notification-body">${message}</div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function updateVersionBadge() {
+            const badge = document.getElementById('versionBadge');
+            if (badge) {
+                badge.textContent = currentVersion;
             } else {
                 console.log('❌ Version badge not found');
             }
         }
         
-        // Test notification system
-        function testNotifications() {
-            console.log('🧪 Testing notification system...');
-            
-            // Test different notification types
-            setTimeout(() => {
-                showNotification('info', 'Test Info', 'This is an info notification');
-            }, 1000);
-            
-            setTimeout(() => {
-                showNotification('success', 'Test Success', 'This is a success notification');
-            }, 2000);
-            
-            setTimeout(() => {
-                showNotification('warning', 'Test Warning', 'This is a warning notification');
-            }, 3000);
-            
-            setTimeout(() => {
-                showNotification('error', 'Test Error', 'This is an error notification');
-            }, 4000);
-        }
-        
-        // Test tab switching
-        function testTabSwitching() {
-            console.log('🔄 Testing tab switching...');
-            
-            setTimeout(() => {
-                switchTab('errors', { target: document.querySelector('.tab-button:nth-child(2)') });
-            }, 1000);
-            
-            setTimeout(() => {
-                switchTab('api', { target: document.querySelector('.tab-button:last-child') });
-            }, 2000);
-        }
-        
-        // Auto-test on load
-        setTimeout(() => {
-            testNotifications();
-            testTabSwitching();
-        }, 2000);
-        
         // Tab switching with better error handling
         function switchTab(tabName, event) {
             try {
-                console.log('🔄 Switching to tab:', tabName);
-                
                 // Hide all tabs
                 document.querySelectorAll('.tab-content').forEach(tab => {
                     tab.classList.remove('active');
@@ -1302,7 +1230,6 @@
                 const targetTab = document.getElementById(tabName + '-tab');
                 if (targetTab) {
                     targetTab.classList.add('active');
-                    console.log('✅ Tab found and activated:', tabName);
                 } else {
                     console.error(`❌ Tab "${tabName}" not found`);
                     showNotification('error', 'Tab Error', `Could not find tab: ${tabName}`);
@@ -1322,10 +1249,99 @@
                     checkApiStatus();
                 }
                 
+                // Update version details when switching to version tab
+                if (tabName === 'test') {
+                    updateVersionDetails();
+                }
+                
             } catch (error) {
                 console.error('❌ Tab switching error:', error);
                 showNotification('error', 'Tab Error', `Failed to switch to ${tabName}: ${error.message}`);
             }
+        }
+        
+        function updateVersionDetails() {
+            const lastUpdated = document.getElementById('lastUpdated');
+            const performanceMetrics = document.getElementById('performanceMetrics');
+            
+            if (lastUpdated) {
+                lastUpdated.textContent = new Date().toLocaleString();
+            }
+            
+            if (performanceMetrics) {
+                performanceMetrics.textContent = 'Optimized and responsive';
+            }
+        }
+        
+        function loadErrors() {
+            return fetch('/api/errors')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        errors = data.errors;
+                        filteredErrors = errors;
+                        renderErrors();
+                        updateStats();
+                    } else {
+                        throw new Error(data.error || 'Failed to load errors');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading errors:', error);
+                    errorContainer.innerHTML = '<div class="no-errors">Failed to load errors. Please try again.</div>';
+                });
+        }
+        
+        function renderErrors() {
+            if (filteredErrors.length === 0) {
+                errorContainer.innerHTML = '<div class="no-errors">No errors found.</div>';
+                return;
+            }
+            
+            errorContainer.innerHTML = filteredErrors.map(error => `
+                <div class="error-item" data-id="${error.id}">
+                    <div class="error-header">
+                        <div class="error-app-name">${escapeHtml(error.appName)}</div>
+                        <div class="error-timestamp">${formatDate(error.timestamp)}</div>
+                    </div>
+                    <div class="error-status status-${error.status}">${getStatusText(error.status)}</div>
+                    <div class="error-message">${escapeHtml(error.error)}</div>
+                    ${error.aiExplanation ? `<div class="error-ai-explanation">${escapeHtml(error.aiExplanation)}</div>` : ''}
+                    ${error.userInfo ? `<div style="color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;">User: ${escapeHtml(error.userInfo)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function updateStats() {
+            const total = errors.length;
+            const pending = errors.filter(e => e.status === 'pending_analysis').length;
+            const analyzed = errors.filter(e => e.status === 'analyzed').length;
+            const failed = errors.filter(e => e.status === 'analysis_failed').length;
+            
+            totalErrorsEl.textContent = total;
+            pendingErrorsEl.textContent = pending;
+            analyzedErrorsEl.textContent = analyzed;
+            failedErrorsEl.textContent = failed;
+        }
+        
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+        
+        function getStatusText(status) {
+            switch (status) {
+                case 'pending_analysis': return 'Pending Analysis';
+                case 'analyzed': return 'Analyzed';
+                case 'analysis_failed': return 'Analysis Failed';
+                default: return 'Unknown';
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         // API Key Management
@@ -1465,215 +1481,64 @@
             }
         }
         
-        function showTestResult(message, type) {
-            const testResult = document.getElementById('testResult');
-            testResult.style.display = 'block';
-            testResult.className = 'test-result test-' + type;
-            testResult.textContent = message;
-            }
-            
-            function loadErrors() {
-                return fetch('/api/errors')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            errors = data.errors;
-                            filteredErrors = errors;
-                            renderErrors();
-                            updateStats();
-                        } else {
-                            throw new Error(data.error || 'Failed to load errors');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading errors:', error);
-                        errorContainer.innerHTML = '<div class="no-errors">Failed to load errors. Please try again.</div>';
-                    });
-            }
-            
-            function renderErrors() {
-                if (filteredErrors.length === 0) {
-                    errorContainer.innerHTML = '<div class="no-errors">No errors found.</div>';
-                    return;
-                }
-                
-                errorContainer.innerHTML = filteredErrors.map(error => `
-                    <div class="error-item" data-id="${error.id}">
-                        <div class="error-header">
-                            <div class="error-app-name">${escapeHtml(error.appName)}</div>
-                            <div class="error-timestamp">${formatDate(error.timestamp)}</div>
-                        </div>
-                        <div class="error-status status-${error.status}">${getStatusText(error.status)}</div>
-                        <div class="error-message">${escapeHtml(error.error)}</div>
-                        ${error.aiExplanation ? `<div class="error-ai-explanation">${escapeHtml(error.aiExplanation)}</div>` : ''}
-                        ${error.userInfo ? `<div style="color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;">User: ${escapeHtml(error.userInfo)}</div>` : ''}
-                    </div>
-                `).join('');
-            }
-            
-            function updateStats() {
-                const total = errors.length;
-                const pending = errors.filter(e => e.status === 'pending_analysis').length;
-                const analyzed = errors.filter(e => e.status === 'analyzed').length;
-                const failed = errors.filter(e => e.status === 'analysis_failed').length;
-                
-                totalErrorsEl.textContent = total;
-                pendingErrorsEl.textContent = pending;
-                analyzedErrorsEl.textContent = analyzed;
-                failedErrorsEl.textContent = failed;
-            }
-            
-            function formatDate(timestamp) {
-                const date = new Date(timestamp);
-                return date.toLocaleString();
-            }
-            
-            function getStatusText(status) {
-                switch (status) {
-                    case 'pending_analysis': return 'Pending Analysis';
-                    case 'analyzed': return 'Analyzed';
-                    case 'analysis_failed': return 'Analysis Failed';
-                    default: return 'Unknown';
-                }
-            }
-            
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-            
-            try {
-                // Create a test error
-                const testError = {
-                    appName: 'TestApp',
-                    error: 'TypeError: Cannot read property of undefined',
-                    userInfo: 'TestUser'
-                };
-                
-                // Send test error for analysis
-                const response = await fetch('/api/errors/capture', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(testError)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    resultsDiv.innerHTML = `
-                        <div style="margin-bottom: 1rem;">
-                            <strong>✅ Error Capture:</strong> Success<br>
-                            <strong>📝 Error ID:</strong> ${result.errorId}<br>
-                            <strong>🔍 Status:</strong> Queued for AI analysis
-                        </div>
-                    `;
-                    showNotification('success', 'Analysis Test Complete', 'Test error captured successfully');
-                } else {
-                    throw new Error(result.error);
-                }
-                
-            } catch (error) {
-                resultsDiv.innerHTML = `<strong>❌ Analysis Test Failed:</strong> ${error.message}`;
-                showNotification('error', 'Analysis Test Failed', error.message);
-            }
-        }
-        
-        function runNotificationTest() {
-            showNotification('info', 'Notification Test', 'Testing notification system...');
-            const resultsDiv = document.getElementById('testResultsContent');
-            
-            // Test different notification types
-            setTimeout(() => showNotification('success', 'Success Test', 'This is a success notification'), 500);
-            setTimeout(() => showNotification('warning', 'Warning Test', 'This is a warning notification'), 1000);
-            setTimeout(() => showNotification('error', 'Error Test', 'This is an error notification'), 1500);
-            
-            resultsDiv.innerHTML = `
-                <div style="margin-bottom: 1rem;">
-                    <strong>✅ Notification System:</strong> Working<br>
-                    <strong>📢 Test Messages:</strong> 4 notifications sent<br>
-                    <strong>🎨 Types Tested:</strong> Info, Success, Warning, Error
-                </div>
-            `;
-            
-            setTimeout(() => {
-                showNotification('success', 'Notification Test Complete', 'All notification types working correctly');
-            }, 2000);
-        }
-        
-        async function runDatabaseTest() {
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.0.4 - JavaScript issues FIXED');
-            const resultsDiv = document.getElementById('testResultsContent');
-            
-            try {
-                // Test retrieving errors
-                const response = await fetch('/api/errors');
-                const data = await response.json();
-                
-                if (data.success) {
-                    resultsDiv.innerHTML = `
-                        <div style="margin-bottom: 1rem;">
-                            <strong>✅ Error Retrieval:</strong> Working<br>
-                            <strong>📊 Total Errors:</strong> ${data.errors.length}<br>
-                            <strong>🔄 API Response:</strong> ${response.status} ${response.statusText}
-                        </div>
-                    `;
-                    showNotification('success', 'Database Test Complete', 'Error storage and retrieval working');
-                } else {
-                    throw new Error(data.error);
-                }
-                
-            } catch (error) {
-                resultsDiv.innerHTML = `<strong>❌ Database Test Failed:</strong> ${error.message}`;
-                showNotification('error', 'Database Test Failed', error.message);
-            }
-        }
-        
-        // Run all tests
-        async function runAllTests() {
-            showNotification('info', 'All Tests', 'Running all system tests...');
-            const resultsDiv = document.getElementById('testResultsContent');
-            const runAllBtn = document.getElementById('runAllTestsBtn');
-            
-            // Disable button during tests
-            runAllBtn.disabled = true;
-            runAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
-            
-            try {
-                await runApiTest();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                await runErrorAnalysisTest();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                runNotificationTest();
-                await new Promise(resolve => setTimeout(resolve, 2500));
-                await runDatabaseTest();
-                
-                resultsDiv.innerHTML = `
-                    <div style="margin-bottom: 1rem; color: #28a745;">
-                        <strong>🎉 All Tests Complete!</strong><br>
-                        ✅ API Connection Test: Passed<br>
-                        ✅ Error Analysis Test: Passed<br>
-                        ✅ Notification Test: Passed<br>
-                        ✅ Database Test: Passed
-                    </div>
-                `;
-                
-                showNotification('success', 'All Tests Complete', 'All system tests passed successfully');
-                
-            } catch (error) {
-                showNotification('error', 'Tests Failed', 'Some tests failed: ' + error.message);
-            } finally {
-                // Re-enable button
-                runAllBtn.disabled = false;
-                runAllBtn.innerHTML = '<i class="fas fa-play"></i> Run All Tests';
-            }
-        }
-        
-        // Add event listener for run all tests button
         document.addEventListener('DOMContentLoaded', function() {
-            const runAllBtn = document.getElementById('runAllTestsBtn');
-            if (runAllBtn) {
-                runAllBtn.addEventListener('click', runAllTests);
+            // Show welcome notification
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.0.4 - JavaScript issues FIXED');
+            
+            // Update version badge
+            updateVersionBadge();
+            
+            // Assign global DOM elements
+            errorContainer = document.getElementById('errorContainer');
+            searchInput = document.getElementById('searchInput');
+            refreshBtn = document.getElementById('refreshBtn');
+            totalErrorsEl = document.getElementById('totalErrors');
+            pendingErrorsEl = document.getElementById('pendingErrors');
+            analyzedErrorsEl = document.getElementById('analyzedErrors');
+            failedErrorsEl = document.getElementById('failedErrors');
+            
+            // Load initial errors
+            loadErrors();
+            
+            // Check API status
+            checkApiStatus();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadErrors, 30000);
+            
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredErrors = errors.filter(error => 
+                    error.appName.toLowerCase().includes(searchTerm) ||
+                    error.error.toLowerCase().includes(searchTerm) ||
+                    error.userInfo.toLowerCase().includes(searchTerm)
+                );
+                renderErrors();
+            });
+            
+            // Refresh button
+            refreshBtn.addEventListener('click', function() {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+                loadErrors().finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                });
+            });
+            
+            // Version tab refresh button
+            const refreshVersionBtn = document.getElementById('refreshVersionBtn');
+            if (refreshVersionBtn) {
+                refreshVersionBtn.addEventListener('click', function() {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+                    updateVersionDetails();
+                    setTimeout(() => {
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                    }, 1000);
+                });
             }
         });
     </script>
