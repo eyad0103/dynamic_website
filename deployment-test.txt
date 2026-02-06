@@ -1,0 +1,3 @@
+Deployment test - v2.0.4
+This file should trigger a fresh deployment.
+JavaScript issues should be fixed.
