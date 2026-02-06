@@ -951,26 +951,25 @@ app.get('/api/agent-package/:packageId', (req, res) => {
             'agent.js': fs.readFileSync(path.join(__dirname, 'agent', 'agent.js'), 'utf8'),
             'agent-config.json': JSON.stringify(agentPackage.config, null, 2),
             'package.json': fs.readFileSync(path.join(__dirname, 'agent', 'package.json'), 'utf8'),
-            'install.bat': `@echo off
-echo Installing PC Monitor Agent...
-node install-service.js
-echo Agent installed successfully!
-pause`,
-            'uninstall.bat': `@echo off
-echo Uninstalling PC Monitor Agent...
-node uninstall-service.js
-echo Agent uninstalled successfully!
-pause`
+            'install.bat': '@echo off\necho Installing PC Monitor Agent...\nnode install-service.js\necho Agent installed successfully!\npause',
+            'uninstall.bat': '@echo off\necho Uninstalling PC Monitor Agent...\nnode uninstall-service.js\necho Agent uninstalled successfully!\npause'
         };
         
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="pc-monitor-agent-${agentPackage.pcId}.zip"`);
+        // Set proper headers for JSON download
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="pc-monitor-agent-${agentPackage.pcId}.json"`);
         
-        // For now, return JSON config (in production, create actual ZIP)
         res.json({
             success: true,
             package: agentPackage,
-            files: packageContent
+            pcId: agentPackage.pcId,
+            downloadUrl: `/api/agent-package/${agentPackage.packageId}`,
+            instructions: {
+                download: 'Download the agent package file',
+                extract: 'Extract all files to a folder on your PC',
+                install: 'Run install.bat as Administrator',
+                verify: 'Agent will start automatically and connect to dashboard'
+            }
         });
         
         console.log(`📥 Agent package downloaded: ${agentPackage.pcId}`);
