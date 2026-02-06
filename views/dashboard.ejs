@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <meta name="description" content="Cyber system dashboard monitoring server status and metrics">
+    <title>CYBER SYSTEM v2.0</title>
+    <meta name="description" content="Advanced cyber system monitoring dashboard with real-time metrics">
     <link rel="stylesheet" href="/css/style.css?v=1.0.1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Cyber Dashboard Styles */
+        /* Enhanced Cyber Dashboard Styles */
         .dashboard-container {
             min-height: 100vh;
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
@@ -26,7 +26,7 @@
             right: 0;
             bottom: 0;
             background-image: 
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px, rgba(0, 255, 136, 0.03) 4px),
                 repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px);
             background-size: 50px 50px;
             pointer-events: none;
@@ -34,7 +34,7 @@
         }
 
         .dashboard-header {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             border-bottom: 2px solid #00ff88;
             padding: 1rem 0;
             position: relative;
@@ -43,7 +43,7 @@
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 0 2rem;
             display: flex;
@@ -55,14 +55,14 @@
             font-size: 1.8rem;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px #00ff88;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px #00ff88;
             animation: glow 2s ease-in-out infinite alternate;
         }
 
         @keyframes glow {
-            from { text-shadow: 0 0 10px #00ff88; }
-            to { text-shadow: 0 0 20px #00ff88, 0 0 30px #00ff88; }
+            from { text-shadow: 0 0 15px #00ff88; }
+            to { text-shadow: 0 0 25px #00ff88, 0 0 35px #00ff88; }
         }
 
         .status-indicator {
@@ -89,137 +89,166 @@
             50% { opacity: 0.5; }
         }
 
-        @keyframes fadeIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(10px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            }
-        }
-
         .dashboard-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
             position: relative;
             z-index: 10;
-        }
-
-        .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: 1fr;
+            gap: 2rem;
         }
 
-        .metric-card {
-            background: rgba(0, 20, 40, 0.8);
-            border: 1px solid rgba(0, 255, 136, 0.3);
+        .main-terminal {
+            background: #000;
+            border: 2px solid #00ff88;
             border-radius: 8px;
             padding: 1.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #00ff88;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
             position: relative;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-        }
-
-        .metric-card:hover {
-            border-color: #00ff88;
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-            transform: translateY(-2px);
         }
 
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff88, transparent);
-            animation: scan 3s linear infinite;
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+            margin-bottom: 1rem;
         }
 
-        @keyframes scan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .metric-label {
-            font-size: 0.8rem;
+        .terminal-title {
+            font-size: 1rem;
             color: #00ff88;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-            opacity: 0.8;
+            letter-spacing: 2px;
         }
 
-        .metric-value {
-            font-size: 1.8rem;
-            font-weight: bold;
+        .terminal-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.8rem;
+            color: rgba(0, 255, 136, 0.8);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(0, 255, 136, 0.6);
+            font-size: 0.7rem;
+        }
+
+        .stat-value {
             color: #ffffff;
+            font-weight: bold;
             text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
         }
 
-        .metric-unit {
-            font-size: 0.9rem;
-            color: #00ff88;
-            opacity: 0.7;
-            margin-left: 0.5rem;
+        .terminal-output {
+            margin-top: 1rem;
+            min-height: 200px;
+            max-height: 250px;
+            overflow-y: auto;
         }
 
-        .system-info {
-            background: rgba(0, 20, 40, 0.8);
-            border: 1px solid rgba(0, 255, 136, 0.3);
+        .console-line {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .console-timestamp {
+            color: rgba(0, 255, 136, 0.6);
+            font-size: 0.8rem;
+            min-width: 80px;
+        }
+
+        .console-message {
+            color: #00ff88;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .console-cursor {
+            color: #00ff88;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .side-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff88;
             border-radius: 8px;
             padding: 1.5rem;
-            backdrop-filter: blur(5px);
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
-        }
-
-        .info-label {
+        .panel-header {
             color: #00ff88;
             font-size: 0.9rem;
-            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
         }
 
-        .info-value {
-            color: #ffffff;
-            font-weight: bold;
+        .system-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
         }
 
-        .nav-link {
-            color: #00ff88;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(0, 255, 136, 0.3);
+        .system-item {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.2);
             border-radius: 4px;
+            padding: 1rem;
             transition: all 0.3s ease;
         }
 
-        .nav-link:hover {
+        .system-item:hover {
             background: rgba(0, 255, 136, 0.1);
             border-color: #00ff88;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .system-label {
+            color: rgba(0, 255, 136, 0.8);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .system-value {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1rem;
+            text-shadow: 0 0 3px rgba(0, 255, 136, 0.5);
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
             .header-content {
                 flex-direction: column;
                 gap: 1rem;
@@ -230,16 +259,18 @@
                 font-size: 1.5rem;
             }
 
-            .metrics-grid {
+            .terminal-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .system-grid {
                 grid-template-columns: 1fr;
             }
 
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-content {
-                padding: 1rem;
+            .main-terminal {
+                min-height: 300px;
+                max-height: 400px;
             }
         }
     </style>
@@ -249,81 +280,59 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <h1 class="dashboard-title">
-                    <i class="fas fa-desktop"></i> System Dashboard
+                    <i class="fas fa-shield-alt"></i> CYBER SYSTEM v2.0
                 </h1>
                 <div class="status-indicator">
                     <div class="status-dot"></div>
-                    <span><%= serverStatus %></span>
+                    <span>ONLINE</span>
                 </div>
             </div>
         </header>
 
         <main class="dashboard-content">
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Server Uptime</div>
-                    <div class="metric-value">
-                        <%= serverUptime %>
+            <!-- Main Terminal -->
+            <div class="main-terminal">
+                <div class="terminal-header">
+                    <div class="terminal-title">SYSTEM TERMINAL</div>
+                    <div class="terminal-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">UPTIME:</span>
+                            <span class="stat-value" id="uptimeDisplay">--:--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">MEMORY:</span>
+                            <span class="stat-value" id="memoryDisplay">--:--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">REQUESTS:</span>
+                            <span class="stat-value" id="requestsDisplay">--:--</span>
+                        </div>
                     </div>
                 </div>
-
-                <div class="metric-card">
-                    <div class="metric-label">Total Requests</div>
-                    <div class="metric-value">
-                        <%= totalRequests %>
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-label">Server Time</div>
-                    <div class="metric-value">
-                        <%= new Date(serverTime).toLocaleTimeString() %>
-                    </div>
-                </div>
-            </div>
-
-            <div class="system-info">
-                <div class="metric-label">System Information</div>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Node Version</span>
-                        <span class="info-value"><%= systemInfo.nodeVersion %></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Platform</span>
-                        <span class="info-value"><%= systemInfo.platform %></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Process ID</span>
-                        <span class="info-value"><%= systemInfo.pid %></span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Memory Usage</span>
-                        <span class="info-value"><%= Math.round(systemInfo.memory.rss / 1024 / 1024) %>MB</span>
-                    </div>
+                <div class="terminal-output" id="terminalOutput">
+                    <!-- Console messages will be added here -->
                 </div>
             </div>
 
-            <!-- Cyber Console -->
-            <div class="system-info" style="margin-top: 2rem;">
-                <div class="metric-label">System Console</div>
-                <div class="console-container" id="cyberConsole" style="
-                    background: #000;
-                    border: 1px solid #00ff88;
-                    border-radius: 4px;
-                    padding: 1rem;
-                    font-family: 'Courier New', monospace;
-                    font-size: 0.9rem;
-                    color: #00ff88;
-                    min-height: 200px;
-                    max-height: 300px;
-                    overflow-y: auto;
-                    position: relative;
-                ">
-                    <div id="consoleOutput" style="margin-bottom: 1rem;"></div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span id="typingIndicator" style="color: #00ff88;">▸</span>
-                        <span id="consoleInput" style="color: #ffffff; opacity: 0.7;">SYSTEM READY</span>
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <div class="panel-header">SYSTEM METRICS</div>
+                <div class="system-grid">
+                    <div class="system-item">
+                        <div class="system-label">Node Version</div>
+                        <div class="system-value"><%= systemInfo.nodeVersion %></div>
+                    </div>
+                    <div class="system-item">
+                        <div class="system-label">Platform</div>
+                        <div class="system-value"><%= systemInfo.platform %></div>
+                    </div>
+                    <div class="system-item">
+                        <div class="system-label">Process ID</div>
+                        <div class="system-value"><%= systemInfo.pid %></div>
+                    </div>
+                    <div class="system-item">
+                        <div class="system-label">Server Time</div>
+                        <div class="system-value" id="serverTimeDisplay">--:--</div>
                     </div>
                 </div>
             </div>
@@ -331,18 +340,29 @@
     </div>
 
     <script>
-        // System monitoring and cyber effects
+        // Enhanced cyber system with streaming logs and real-time updates
         let requestCount = <%= totalRequests %>;
+        let systemData = {
+            uptime: '<%= serverUptime %>',
+            memory: <%= JSON.stringify(systemInfo.memory) %>,
+            nodeVersion: '<%= systemInfo.nodeVersion %>',
+            platform: '<%= systemInfo.platform %>',
+            pid: <%= systemInfo.pid %>
+        };
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize console
-            const consoleOutput = document.getElementById('consoleOutput');
-            const typingIndicator = document.getElementById('typingIndicator');
-            const consoleInput = document.getElementById('consoleInput');
+            const terminalOutput = document.getElementById('terminalOutput');
+            const uptimeDisplay = document.getElementById('uptimeDisplay');
+            const memoryDisplay = document.getElementById('memoryDisplay');
+            const requestsDisplay = document.getElementById('requestsDisplay');
+            const serverTimeDisplay = document.getElementById('serverTimeDisplay');
             
-            // Simulate system boot sequence
-            const bootMessages = [
-                'SYSTEM BOOT INITIALIZED...',
+            // Initialize displays
+            updateDisplays();
+            
+            // System boot sequence
+            const bootSequence = [
+                'SYSTEM INITIALIZING...',
                 'LOADING CYBER MODULES...',
                 'ESTABLISHING SECURE CONNECTION...',
                 'SYSTEM READY'
@@ -351,48 +371,49 @@
             let messageIndex = 0;
             function typeMessage(message, callback) {
                 let charIndex = 0;
-                typingIndicator.style.display = 'inline-block';
-                consoleInput.textContent = '';
-                
                 const typeInterval = setInterval(() => {
                     if (charIndex < message.length) {
-                        consoleInput.textContent += message[charIndex];
+                        addConsoleLine(`[SYSTEM] ${message[charIndex]}`);
                         charIndex++;
                     } else {
                         clearInterval(typeInterval);
-                        typingIndicator.style.display = 'none';
                         if (callback) callback();
                     }
-                }, 50);
+                }, 30);
             }
             
-            function addConsoleMessage(message, type = 'system') {
-                const messageElement = document.createElement('div');
-                messageElement.style.cssText = `
-                    margin-bottom: 0.5rem;
-                    padding: 0.25rem 0.5rem;
-                    background: rgba(0, 255, 136, 0.1);
-                    border-left: 2px solid #00ff88;
-                    color: ${type === 'system' ? '#00ff88' : '#ffffff'};
-                    font-size: 0.8rem;
-                    animation: fadeIn 0.3s ease;
-                `;
-                messageElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-                consoleOutput.appendChild(messageElement);
-                consoleOutput.scrollTop = consoleOutput.scrollHeight;
-            }
-            
-            // Start boot sequence
             function startBootSequence() {
-                if (messageIndex < bootMessages.length) {
-                    typeMessage(bootMessages[messageIndex], () => {
+                if (messageIndex < bootSequence.length) {
+                    typeMessage(bootSequence[messageIndex], () => {
                         messageIndex++;
-                        setTimeout(startBootSequence, 1000);
+                        setTimeout(startBootSequence, 500);
                     });
                 } else {
                     // Start live monitoring
                     startLiveMonitoring();
                 }
+            }
+            
+            function addConsoleLine(message, type = 'system') {
+                const lineElement = document.createElement('div');
+                lineElement.className = 'console-line';
+                lineElement.innerHTML = `
+                    <span class="console-timestamp">${new Date().toLocaleTimeString()}</span>
+                    <span class="console-message">${message}</span>
+                    <span class="console-cursor">_</span>
+                `;
+                terminalOutput.appendChild(lineElement);
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            }
+            
+            function updateDisplays() {
+                if (uptimeDisplay) uptimeDisplay.textContent = systemData.uptime;
+                if (memoryDisplay) {
+                    const memory = JSON.parse(systemData.memory);
+                    memoryDisplay.textContent = `${Math.round(memory.heapUsed / 1024 / 1024)}MB / ${Math.round(memory.heapTotal / 1024 / 1024)}MB`;
+                }
+                if (requestsDisplay) requestsDisplay.textContent = requestCount;
+                if (serverTimeDisplay) serverTimeDisplay.textContent = new Date().toLocaleTimeString();
             }
             
             function startLiveMonitoring() {
@@ -402,55 +423,49 @@
                         'Scanning network traffic...',
                         'Monitoring system resources...',
                         'Updating security protocols...',
-                        'Syncing with main server...'
+                        'Syncing with main server...',
+                        'Analyzing data patterns...',
+                        'Optimizing performance metrics...'
                     ];
                     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                    addConsoleMessage(randomMessage, 'system');
-                }, 5000);
+                    addConsoleLine(randomMessage, 'system');
+                }, 3000);
                 
                 // Update metrics periodically
                 setInterval(() => {
-                    updateMetrics();
+                    fetch('/api/system/stats')
+                        .then(response => response.json())
+                        .then(data => {
+                            // Update local data
+                            systemData = {
+                                uptime: data.uptime,
+                                memory: data.memory,
+                                nodeVersion: data.system.nodeVersion,
+                                platform: data.system.platform,
+                                pid: data.system.pid
+                            };
+                            
+                            // Update displays
+                            updateDisplays();
+                            
+                            // Add memory warning if needed
+                            const memory = JSON.parse(data.memory);
+                            const memoryUsage = (memory.heapUsed / memory.heapTotal) * 100;
+                            if (memoryUsage > 80) {
+                                addConsoleLine('WARNING: Memory usage critical!', 'warning');
+                            }
+                        })
+                        .catch(error => {
+                            addConsoleLine(`ERROR: Failed to fetch system stats - ${error.message}`, 'error');
+                        });
                 }, 2000);
-            }
-            
-            function updateMetrics() {
-                // Fetch latest system stats
-                fetch('/api/system/stats')
-                    .then(response => response.json())
-                    .then(data => {
-                        const uptimeElement = document.querySelector('.metric-value');
-                        if (uptimeElement && uptimeElement[0]) {
-                            uptimeElement[0].textContent = data.uptime;
-                        }
-                        
-                        const memoryElement = document.querySelectorAll('.metric-value')[1];
-                        if (memoryElement) {
-                            memoryElement.textContent = data.memory.heapUsed + 'MB';
-                        }
-                        
-                        const requestsElement = document.querySelectorAll('.metric-value')[2];
-                        if (requestsElement) {
-                            requestsElement.textContent = data.requests;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching system stats:', error);
-                    });
-            }
-            
-            // Add hover effects to cards
-            const cards = document.querySelectorAll('.metric-card');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transition = 'all 0.1s ease';
-                    this.style.boxShadow = '0 0 25px rgba(0, 255, 136, 0.5)';
-                });
                 
-                card.addEventListener('mouseleave', function() {
-                    this.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.3)';
-                });
-            });
+                // Simulate incoming requests
+                setInterval(() => {
+                    requestCount++;
+                    updateDisplays();
+                }, 5000);
+            }
             
             // Start the experience
             setTimeout(startBootSequence, 1000);
