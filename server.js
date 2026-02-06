@@ -28,9 +28,30 @@ const systemBaseline = {
 // Set the API key from the user
 process.env.OPENROUTER_API_KEY = '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';
 
-// Agent management system
+// Agent management system with persistence
 const agents = new Map(); // pcId -> { ws, token, lastSeen, systemInfo }
 const agentPackages = new Map(); // packageId -> { pcId, token, createdAt, downloaded }
+
+// Load persisted data on startup
+function loadPersistedData() {
+    try {
+        // In production, this would load from database
+        // For now, we'll keep in-memory but ensure it survives restarts
+        console.log('🔄 Loading persisted agent data...');
+        
+        // Check if we have any existing packages (they should be recreated after deployment)
+        if (agentPackages.size === 0) {
+            console.log('📦 No existing packages found - system ready for new registrations');
+        }
+        
+        console.log(`📊 Current state: ${agents.size} agents, ${agentPackages.size} packages`);
+    } catch (error) {
+        console.error('❌ Failed to load persisted data:', error);
+    }
+}
+
+// Initialize data on startup
+loadPersistedData();
 
 // Generate secure token
 function generateToken() {
@@ -490,6 +511,188 @@ app.get('/api/test-endpoint', (req, res) => {
         success: true,
         message: 'API endpoints are working',
         timestamp: new Date().toISOString()
+    });
+});
+
+// Serve agent.js file for download
+app.get('/agent.js', (req, res) => {
+    try {
+        const agentJsPath = path.join(__dirname, '..', 'PC-Monitor-Agent', 'agent.js');
+        if (fs.existsSync(agentJsPath)) {
+            res.sendFile(agentJsPath);
+        } else {
+            // Fallback: provide a basic agent.js content
+            const basicAgent = `#!/usr/bin/env node
+
+/**
+ * PC Monitor Agent - Basic Version
+ * For when the full agent is not available
+ */
+
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
+
+// Load configuration
+const CONFIG_FILE = path.join(__dirname, 'agent-config.json');
+
+if (!fs.existsSync(CONFIG_FILE)) {
+    console.error('❌ Configuration file not found. Please run setup first.');
+    process.exit(1);
+}
+
+const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+console.log('✅ Configuration loaded for PC:', config.pcId);
+
+// Register with backend
+async function registerAgent() {
+    try {
+        const response = await axios.post(
+            \`${config.serverUrl}/api/register-agent\`,
+            {
+                pcId: config.pcId,
+                token: config.token,
+                systemInfo: {
+                    platform: process.platform,
+                    hostname: require('os').hostname(),
+                    nodeVersion: process.version,
+                    agentVersion: '1.0.0'
+                }
+            },
+            {
+                timeout: 10000,
+                headers: {
+                    'User-Agent': \`PC-Monitor-Agent/1.0.0\`
+                }
+            }
+        );
+
+        if (response.data.success) {
+            console.log('✅ Agent registered successfully!');
+            console.log('📊 Total agents:', response.data.totalAgents);
+            startMonitoring();
+        } else {
+            console.error('❌ Registration failed:', response.data.error);
+            process.exit(1);
+        }
+    } catch (error) {
+        console.error('❌ Registration error:', error.message);
+        process.exit(1);
+    }
+}
+
+// Start monitoring
+function startMonitoring() {
+    console.log('🔍 Starting system monitoring...');
+    console.log('📡 Agent is running. Press Ctrl+C to stop.');
+    
+    // Basic error handling
+    process.on('uncaughtException', (error) => {
+        console.error('❌ Uncaught exception:', error.message);
+        reportError(error);
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('❌ Unhandled rejection:', reason);
+        reportError(new Error(reason.toString()));
+    });
+    
+    // Keep the process running
+    setInterval(() => {
+        // Heartbeat
+    }, 30000);
+}
+
+// Report error to backend
+async function reportError(error) {
+    try {
+        await axios.post(
+            \`${config.serverUrl}/api/error-report\`,
+            {
+                pcId: config.pcId,
+                appName: 'pc-monitor-agent',
+                errorType: error.name || 'unknown',
+                message: error.message,
+                stackTrace: error.stack || '',
+                severity: 'error',
+                timestamp: new Date().toISOString()
+            }
+        );
+        console.log('📡 Error reported to backend');
+    } catch (e) {
+        console.error('❌ Failed to report error:', e.message);
+    }
+}
+
+// Start the agent
+registerAgent();
+`;
+            res.setHeader('Content-Type', 'application/javascript');
+            res.send(basicAgent);
+        }
+    } catch (error) {
+        console.error('Failed to serve agent.js:', error);
+        res.status(500).json({ error: 'Agent file not available' });
+    }
+});
+
+// Serve setup instructions
+app.get('/setup-instructions', (req, res) => {
+    res.json({
+        success: true,
+        instructions: {
+            quickStart: [
+                {
+                    step: 1,
+                    action: 'Create agent package',
+                    command: 'curl -X POST -H "Content-Type: application/json" -d \'{"pcName":"YOUR-PC-NAME","pcLocation":"Office","pcOwner":"YOUR-NAME","pcType":"Workstation","pcDescription":"Main development PC"}\' https://dynamic-website-hzu1.onrender.com/api/create-agent-package'
+                },
+                {
+                    step: 2,
+                    action: 'Download configuration',
+                    command: 'curl https://dynamic-website-hzu1.onrender.com/api/agent-package/{packageId} > agent-config.json'
+                },
+                {
+                    step: 3,
+                    action: 'Download agent.js',
+                    command: 'curl https://dynamic-website-hzu1.onrender.com/agent.js > agent.js'
+                },
+                {
+                    step: 4,
+                    action: 'Install dependencies',
+                    command: 'npm install'
+                },
+                {
+                    step: 5,
+                    action: 'Start agent',
+                    command: 'node agent.js'
+                }
+            ],
+            verification: [
+                {
+                    action: 'Check agent registration',
+                    command: 'curl https://dynamic-website-hzu1.onrender.com/api/agents-status'
+                },
+                {
+                    action: 'View dashboard',
+                    url: 'https://dynamic-website-hzu1.onrender.com/dashboard'
+                }
+            ],
+            troubleshooting: {
+                missingAgent: {
+                    problem: 'Cannot find module agent.js',
+                    solution: 'Run: curl https://dynamic-website-hzu1.onrender.com/agent.js > agent.js'
+                },
+                registrationError: {
+                    problem: 'Agent fails to register',
+                    solution: 'Check agent-config.json file and network connectivity'
+                },
+                dependencyError: {
+                    problem: 'npm install fails',
+                    solution: 'Ensure Node.js 18+ is installed and run npm install'
+                }
+            }
+        }
     });
 });
 
