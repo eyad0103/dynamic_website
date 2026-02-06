@@ -1163,7 +1163,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.3 - Debug Fixed';
+        let currentVersion = 'v2.1.4 - Copy & Validation Fixed';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2039,10 +2039,21 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         }
         
         function copyAgentCode() {
-            const agentCode = document.getElementById('agentCode').textContent;
+            const agentCodeElement = document.getElementById('agentCode');
+            const agentCode = agentCodeElement ? agentCodeElement.textContent : '';
+            
+            if (!agentCode) {
+                showNotification('error', 'Copy Failed', 'No agent code to copy. Please create an agent first.');
+                return;
+            }
+            
+            console.log('🔧 Debug: Attempting to copy agent code:', agentCode.substring(0, 100) + '...');
+            
             navigator.clipboard.writeText(agentCode).then(() => {
-                showNotification('success', 'Code Copied', 'Agent code copied to clipboard');
+                showNotification('success', 'Code Copied', 'Agent code copied to clipboard successfully');
+                console.log('✅ Debug: Agent code copied to clipboard');
             }).catch(err => {
+                console.log('❌ Debug: Copy failed:', err);
                 showNotification('error', 'Copy Failed', 'Failed to copy code: ' + err.message);
             });
         }
@@ -2149,7 +2160,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.3 - Debug logging added');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.4 - Copy & validation fixed');
             
             // Update version badge
             updateVersionBadge();
