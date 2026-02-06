@@ -298,6 +298,125 @@ app.get('/api/errors/:id', (req, res) => {
     });
 });
 
+// API Key Management
+app.post('/api/test-api-key', async (req, res) => {
+    const { apiKey, testPrompt } = req.body;
+    
+    if (!apiKey || !testPrompt) {
+        return res.status(400).json({
+            success: false,
+            error: 'API key and test prompt are required'
+        });
+    }
+    
+    try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                'X-Title': 'API Key Test'
+            },
+            body: JSON.stringify({
+                model: 'anthropic/claude-3-haiku',
+                messages: [
+                    {
+                        role: 'user',
+                        content: testPrompt
+                    }
+                ],
+                max_tokens: 500,
+                temperature: 0.7
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API request failed: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content;
+        
+        res.json({
+            success: true,
+            response: aiResponse
+        });
+        
+    } catch (error) {
+        console.error('API key test failed:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+app.post('/api/save-api-key', async (req, res) => {
+    const { apiKey } = req.body;
+    
+    if (!apiKey) {
+        return res.status(400).json({
+            success: false,
+            error: 'API key is required'
+        });
+    }
+    
+    try {
+        // Test the API key first
+        const testResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                'X-Title': 'API Key Validation'
+            },
+            body: JSON.stringify({
+                model: 'anthropic/claude-3-haiku',
+                messages: [
+                    {
+                        role: 'user',
+                        content: 'API key validation test'
+                    }
+                ],
+                max_tokens: 100,
+                temperature: 0.7
+            })
+        });
+        
+        if (!testResponse.ok) {
+            throw new Error(`API key validation failed: ${testResponse.statusText}`);
+        }
+        
+        // Store the API key in environment (in production, this would be stored securely)
+        process.env.OPENROUTER_API_KEY = apiKey;
+        
+        res.json({
+            success: true,
+            message: 'API key saved and validated successfully'
+        });
+        
+    } catch (error) {
+        console.error('API key save failed:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get API key status
+app.get('/api/api-key-status', (req, res) => {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    
+    res.json({
+        success: true,
+        configured: !!apiKey,
+        maskedKey: apiKey ? apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4) : null
+    });
+});
+
 // AI Analysis Function
 async function analyzeError(errorRecord) {
     try {
@@ -401,6 +520,9 @@ app.listen(PORT, () => {
     console.log(`   POST /api/errors/capture - Capture app errors for AI analysis`);
     console.log(`   GET  /api/errors - Get all error records`);
     console.log(`   GET  /api/errors/:id - Get specific error details`);
+    console.log(`   POST /api/test-api-key - Test OpenRouter API key`);
+    console.log(`   POST /api/save-api-key - Save OpenRouter API key`);
+    console.log(`   GET  /api/api-key-status - Get API key status`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
     console.log(`   GET  /about - About page`);
