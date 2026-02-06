@@ -1806,25 +1806,6 @@ app.post('/api/register-agent', async (req, res) => {
     }
 });
 
-// ... (rest of the code remains the same)
-            errorCount: global.errorReports?.filter(e => e.pcId === pcId).length || 0
-        }));
-        
-        res.json({
-            success: true,
-            agents: agentsStatus,
-            totalAgents: agentsStatus.length
-        });
-        
-    } catch (error) {
-        console.error('Failed to get agents status:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
-        });
-    }
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
