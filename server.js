@@ -224,117 +224,145 @@ app.get('/api/system/stats', (req, res) => {
     });
 });
 
-// Interactive Terminal API
-app.post('/api/terminal/command', (req, res) => {
-    const { command } = req.body;
+// Error Capture API
+app.post('/api/errors/capture', async (req, res) => {
+    const { appName, error, userInfo } = req.body;
     
-    if (!command) {
+    if (!appName || !error) {
         return res.status(400).json({
             success: false,
-            error: 'No command provided'
+            error: 'App name and error message are required'
         });
     }
     
-    // Parse command and execute
-    const result = executeCommand(command);
+    try {
+        // Store error with timestamp
+        const errorRecord = {
+            id: Date.now().toString(),
+            appName: appName,
+            error: error,
+            userInfo: userInfo || 'Anonymous',
+            timestamp: new Date().toISOString(),
+            status: 'pending_analysis'
+        };
+        
+        // Add to error storage (in-memory for now)
+        if (!global.errorDatabase) {
+            global.errorDatabase = [];
+        }
+        global.errorDatabase.push(errorRecord);
+        
+        // Trigger AI analysis
+        analyzeError(errorRecord);
+        
+        res.json({
+            success: true,
+            errorId: errorRecord.id,
+            message: 'Error captured and queued for analysis'
+        });
+        
+    } catch (err) {
+        console.error('Error capturing error:', err);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to capture error'
+        });
+    }
+});
+
+// Get all errors for dashboard
+app.get('/api/errors', (req, res) => {
+    const errors = global.errorDatabase || [];
     res.json({
         success: true,
-        command: command,
-        result: result,
-        timestamp: new Date().toISOString()
+        errors: errors.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     });
 });
 
-// Command execution function
-function executeCommand(command) {
-    const parts = command.trim().split(' ');
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
+// Get specific error details
+app.get('/api/errors/:id', (req, res) => {
+    const errorId = req.params.id;
+    const errors = global.errorDatabase || [];
+    const error = errors.find(e => e.id === errorId);
     
-    switch (cmd) {
-        case 'help':
-            return {
-                type: 'help',
-                output: 'Available commands:\n• status - Show system status\n• uptime - Display server uptime\n• memory - Show memory usage\n• time - Show current server time\n• requests - Show total requests served\n• clear - Clear terminal\n• scan - Scan network for vulnerabilities\n• ping - Test network connectivity\n• version - Show system version\n• info - Show system information\n• logs - Show recent system logs\n• exit - Exit terminal session'
-            };
-            
-        case 'status':
-            return {
-                type: 'status',
-                output: 'System Status: ONLINE\nUptime: ' + systemBaseline.getUptimeFormatted() + '\nMemory: ' + Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB / ' + Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB\nRequests: ' + (req.requestCount || 0) + '\nServer Time: ' + new Date().toLocaleTimeString() + '\nPlatform: ' + process.platform() + '\nNode Version: ' + process.version()
-            };
-            
-        case 'uptime':
-            return {
-                type: 'uptime',
-                output: 'Server Uptime: ' + systemBaseline.getUptimeFormatted()
-            };
-            
-        case 'memory':
-            return {
-                type: 'memory',
-                output: 'Memory Usage:\nRSS: ' + Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB\nHeap: ' + Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB / ' + Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB\nExternal: ' + Math.round(process.memoryUsage().external / 1024 / 1024) + 'MB\nTotal: ' + Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB'
-            };
-            
-        case 'time':
-            return {
-                type: 'time',
-                output: 'Server Time: ' + new Date().toLocaleTimeString()
-            };
-            
-        case 'requests':
-            return {
-                type: 'requests',
-                output: 'Total Requests: ' + (req.requestCount || 0)
-            };
-            
-        case 'clear':
-            return {
-                type: 'clear',
-                output: 'Terminal cleared.'
-            };
-            
-        case 'scan':
-            return {
-                type: 'scan',
-                output: 'Scanning network interfaces...\nChecking for open ports...\nAnalyzing system vulnerabilities...\nNetwork scan complete. No threats detected.'
-            };
-            
-        case 'ping':
-            return {
-                type: 'ping',
-                output: 'Pinging google.com...\nPing successful: 12ms\nPinging github.com...\nPing successful: 8ms\nNetwork connectivity: GOOD'
-            };
-            
-        case 'version':
-            return {
-                type: 'version',
-                output: 'Node.js Version: ' + process.version()
-            };
-            
-        case 'info':
-            return {
-                type: 'info',
-                output: 'System Information:\nPlatform: ' + process.platform() + '\nArchitecture: ' + process.arch() + '\nNode Version: ' + process.version() + '\nProcess ID: ' + process.pid() + '\nUptime: ' + systemBaseline.getUptimeFormatted() + '\nMemory: ' + Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB\nRequests: ' + (req.requestCount || 0)
-            };
-            
-        case 'logs':
-            return {
-                type: 'logs',
-                output: 'Recent System Logs:\n[' + new Date().toISOString() + '] System initialized successfully\n[' + new Date().toISOString() + '] Loading cyber security modules...\n[' + new Date().toISOString() + '] Establishing secure connections...\n[' + new Date().toISOString() + '] System ready for operation\n[' + new Date().toISOString() + '] Monitoring active connections...'
-            };
-            
-        case 'exit':
-            return {
-                type: 'exit',
-                output: 'Terminal session ended.'
-            };
-            
-        default:
-            return {
-                type: 'error',
-                output: 'Unknown command: ' + command + '. Type \'help\' for available commands.'
-            };
+    if (!error) {
+        return res.status(404).json({
+            success: false,
+            error: 'Error not found'
+        });
+    }
+    
+    res.json({
+        success: true,
+        error: error
+    });
+});
+
+// AI Analysis Function
+async function analyzeError(errorRecord) {
+    try {
+        const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+        
+        if (!openrouterApiKey) {
+            console.warn('OpenRouter API key not found, skipping AI analysis');
+            errorRecord.aiExplanation = 'AI analysis disabled - API key not configured';
+            errorRecord.status = 'analysis_failed';
+            return;
+        }
+        
+        const prompt = `Analyze this app crash error and provide a clear explanation for the app owner:
+
+App Name: ${errorRecord.appName}
+Error Message: ${errorRecord.error}
+
+Please explain:
+1. What likely caused this error
+2. How serious this issue is
+3. Recommended fixes or next steps
+4. Any potential impact on users
+
+Keep the explanation clear and actionable for a non-technical app owner.`;
+        
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${openrouterApiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                'X-Title': 'App Error Analysis'
+            },
+            body: JSON.stringify({
+                model: 'anthropic/claude-3-haiku',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: 1000,
+                temperature: 0.7
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`AI API request failed: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const aiExplanation = data.choices[0].message.content;
+        
+        // Update error record with AI analysis
+        errorRecord.aiExplanation = aiExplanation;
+        errorRecord.status = 'analyzed';
+        errorRecord.analyzedAt = new Date().toISOString();
+        
+        console.log(`Error ${errorRecord.id} analyzed successfully`);
+        
+    } catch (error) {
+        console.error('AI analysis failed:', error);
+        errorRecord.aiExplanation = `AI analysis failed: ${error.message}`;
+        errorRecord.status = 'analysis_failed';
+        errorRecord.analyzedAt = new Date().toISOString();
     }
 }
 
@@ -370,6 +398,9 @@ app.listen(PORT, () => {
     console.log(`   POST /api/contact - Submit contact form`);
     console.log(`   GET  /api/system/status - System status API`);
     console.log(`   GET  /api/system/stats - System statistics API`);
+    console.log(`   POST /api/errors/capture - Capture app errors for AI analysis`);
+    console.log(`   GET  /api/errors - Get all error records`);
+    console.log(`   GET  /api/errors/:id - Get specific error details`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
     console.log(`   GET  /about - About page`);

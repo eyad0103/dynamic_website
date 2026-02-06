@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER SYSTEM v2.0</title>
-    <meta name="description" content="Advanced cyber system monitoring dashboard with real-time metrics">
+    <title>AI Error Analysis Dashboard</title>
+    <meta name="description" content="AI-powered app error analysis and monitoring dashboard">
     <link rel="stylesheet" href="/css/style.css?v=1.0.1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Enhanced Cyber Dashboard Styles */
+        /* Error Dashboard Styles */
         .dashboard-container {
             min-height: 100vh;
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
@@ -26,7 +26,7 @@
             right: 0;
             bottom: 0;
             background-image: 
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px, rgba(0, 255, 136, 0.03) 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px),
                 repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px);
             background-size: 50px 50px;
             pointer-events: none;
@@ -89,166 +89,207 @@
             50% { opacity: 0.5; }
         }
 
-        .dashboard-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-            position: relative;
-            z-index: 10;
+        .error-stats {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .main-terminal {
-            background: #000;
-            border: 2px solid #00ff88;
+        .stat-card {
+            background: rgba(0, 20, 40, 0.8);
+            border: 1px solid rgba(0, 255, 136, 0.3);
             border-radius: 8px;
             padding: 1.5rem;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            color: #00ff88;
-            min-height: 400px;
-            max-height: 500px;
-            overflow-y: auto;
             position: relative;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
         }
 
-        .terminal-header {
+        .stat-card:hover {
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+        }
+
+        .error-list {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .error-list-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1.5rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid rgba(0, 255, 136, 0.3);
-            margin-bottom: 1rem;
         }
 
-        .terminal-title {
-            font-size: 1rem;
+        .error-list-title {
+            font-size: 1.2rem;
             color: #00ff88;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
-        .terminal-stats {
+        .error-filters {
             display: flex;
-            gap: 2rem;
-            font-size: 0.8rem;
-            color: rgba(0, 255, 136, 0.8);
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .stat-label {
-            color: rgba(0, 255, 136, 0.6);
-            font-size: 0.7rem;
-        }
-
-        .stat-value {
-            color: #ffffff;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
-        }
-
-        .terminal-output {
-            margin-top: 1rem;
-            min-height: 200px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .console-line {
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-
-        .console-timestamp {
-            color: rgba(0, 255, 136, 0.6);
-            font-size: 0.8rem;
-            min-width: 80px;
-        }
-
-        .console-message {
-            color: #00ff88;
-            font-size: 0.9rem;
-            flex: 1;
-        }
-
-        .console-cursor {
-            color: #00ff88;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        .side-panel {
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #00ff88;
-            border-radius: 8px;
-            padding: 1.5rem;
-        }
-
-        .panel-header {
-            color: #00ff88;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
-        }
-
-        .system-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
+            align-items: center;
         }
 
-        .system-item {
+        .filter-input {
+            background: transparent;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .filter-input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .error-item {
             background: rgba(0, 255, 136, 0.05);
             border: 1px solid rgba(0, 255, 136, 0.2);
             border-radius: 4px;
             padding: 1rem;
+            margin-bottom: 1rem;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
-        .system-item:hover {
+        .error-item:hover {
             background: rgba(0, 255, 136, 0.1);
             border-color: #00ff88;
-            transform: translateY(-2px);
+            transform: translateX(5px);
         }
 
-        .system-label {
-            color: rgba(0, 255, 136, 0.8);
-            font-size: 0.8rem;
+        .error-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 0.5rem;
         }
 
-        .system-value {
+        .error-app-name {
+            font-size: 1.1rem;
             color: #ffffff;
             font-weight: bold;
-            font-size: 1rem;
-            text-shadow: 0 0 3px rgba(0, 255, 136, 0.5);
+        }
+
+        .error-timestamp {
+            font-size: 0.8rem;
+            color: rgba(0, 255, 136, 0.6);
+        }
+
+        .error-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .status-analyzed {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .status-failed {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .error-message {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem;
+            border-radius: 4px;
+            border-left: 3px solid #00ff88;
+        }
+
+        .error-ai-explanation {
+            color: #00ff88;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            background: rgba(0, 255, 136, 0.05);
+            padding: 0.5rem;
+            border-radius: 4px;
+            border-left: 3px solid #00ff88;
+            margin-top: 0.5rem;
+        }
+
+        .no-errors {
+            text-align: center;
+            color: rgba(0, 255, 136, 0.6);
+            font-size: 1.1rem;
+            padding: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            color: #00ff88;
+            font-size: 1.1rem;
+            padding: 2rem;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            .dashboard-content {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-                padding: 1rem;
-            }
-
             .header-content {
                 flex-direction: column;
                 gap: 1rem;
@@ -259,18 +300,22 @@
                 font-size: 1.5rem;
             }
 
-            .terminal-stats {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .system-grid {
+            .error-stats {
                 grid-template-columns: 1fr;
             }
 
-            .main-terminal {
-                min-height: 300px;
-                max-height: 400px;
+            .error-filters {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .filter-input {
+                width: 100%;
+            }
+
+            .error-header {
+                flex-direction: column;
+                gap: 0.5rem;
             }
         }
     </style>
@@ -280,266 +325,165 @@
         <header class="dashboard-header">
             <div class="header-content">
                 <h1 class="dashboard-title">
-                    <i class="fas fa-shield-alt"></i> CYBER SYSTEM v2.0
+                    <i class="fas fa-brain"></i> AI Error Analysis Dashboard
                 </h1>
                 <div class="status-indicator">
                     <div class="status-dot"></div>
-                    <span>ONLINE</span>
+                    <span>MONITORING</span>
                 </div>
             </div>
         </header>
 
         <main class="dashboard-content">
-            <!-- Main Terminal -->
-            <div class="main-terminal">
-                <div class="terminal-header">
-                    <div class="terminal-title">SYSTEM TERMINAL</div>
-                    <div class="terminal-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">UPTIME:</span>
-                            <span class="stat-value" id="uptimeDisplay">--:--</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">MEMORY:</span>
-                            <span class="stat-value" id="memoryDisplay">--:--</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">REQUESTS:</span>
-                            <span class="stat-value" id="requestsDisplay">--:--</span>
-                        </div>
-                    </div>
+            <!-- Error Statistics -->
+            <div class="error-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Errors</div>
+                    <div class="stat-value" id="totalErrors">0</div>
                 </div>
-                <div class="terminal-output" id="terminalOutput">
-                    <!-- Console messages will be added here -->
+                <div class="stat-card">
+                    <div class="stat-label">Pending Analysis</div>
+                    <div class="stat-value" id="pendingErrors">0</div>
                 </div>
-                <div class="terminal-input-area" style="
-                    display: flex; 
-                    align-items: center; 
-                    gap: 0.5rem; 
-                    padding: 1rem; 
-                    border-top: 1px solid rgba(0, 255, 136, 0.3);
-                    margin-top: 1rem;
-                ">
-                    <input type="text" id="terminalInput" placeholder="Enter command..." style="
-                        background: transparent; 
-                        border: 1px solid #00ff88; 
-                        color: #00ff88; 
-                        padding: 0.5rem; 
-                        font-family: 'Courier New', monospace; 
-                        font-size: 0.9rem; 
-                        outline: none; 
-                        flex: 1; 
-                        border-radius: 4px; 
-                        width: 100%;
-                    " onkeypress="handleTerminalKey(event)" onkeydown="handleTerminalKeyDown(event)">
-                    <span id="terminalCursor" style="color: #00ff88;">_</span>
+                <div class="stat-card">
+                    <div class="stat-label">Analyzed</div>
+                    <div class="stat-value" id="analyzedErrors">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Failed Analysis</div>
+                    <div class="stat-value" id="failedErrors">0</div>
                 </div>
             </div>
 
-            <!-- Side Panel -->
-            <div class="side-panel">
-                <div class="panel-header">SYSTEM METRICS</div>
-                <div class="system-grid">
-                    <div class="system-item">
-                        <div class="system-label">Node Version</div>
-                        <div class="system-value"><%= systemInfo.nodeVersion %></div>
+            <!-- Error List -->
+            <div class="error-list">
+                <div class="error-list-header">
+                    <div class="error-list-title">Recent Errors</div>
+                    <div class="error-filters">
+                        <input type="text" id="searchInput" class="filter-input" placeholder="Search errors...">
+                        <button id="refreshBtn" class="refresh-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
                     </div>
-                    <div class="system-item">
-                        <div class="system-label">Platform</div>
-                        <div class="system-value"><%= systemInfo.platform %></div>
-                    </div>
-                    <div class="system-item">
-                        <div class="system-label">Process ID</div>
-                        <div class="system-value"><%= systemInfo.pid %></div>
-                    </div>
-                    <div class="system-item">
-                        <div class="system-label">Server Time</div>
-                        <div class="system-value" id="serverTimeDisplay">--:--</div>
-                    </div>
+                </div>
+                <div id="errorContainer">
+                    <div class="loading">Loading errors...</div>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        // Enhanced cyber system with interactive terminal
-        let requestCount = <%= totalRequests %>;
-        let systemData = {
-            uptime: '<%= serverUptime %>',
-            memory: <%= JSON.stringify(systemInfo.memory) %>,
-            nodeVersion: '<%= systemInfo.nodeVersion %>',
-            platform: '<%= systemInfo.platform %>',
-            pid: <%= systemInfo.pid %>
-        };
-        let commandHistory = [];
-        let historyIndex = 0;
+        // AI Error Analysis Dashboard
+        let errors = [];
+        let filteredErrors = [];
         
         document.addEventListener('DOMContentLoaded', function() {
-            const terminalOutput = document.getElementById('terminalOutput');
-            const terminalInput = document.getElementById('terminalInput');
-            const uptimeDisplay = document.getElementById('uptimeDisplay');
-            const memoryDisplay = document.getElementById('memoryDisplay');
-            const requestsDisplay = document.getElementById('requestsDisplay');
-            const serverTimeDisplay = document.getElementById('serverTimeDisplay');
+            const errorContainer = document.getElementById('errorContainer');
+            const searchInput = document.getElementById('searchInput');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const totalErrorsEl = document.getElementById('totalErrors');
+            const pendingErrorsEl = document.getElementById('pendingErrors');
+            const analyzedErrorsEl = document.getElementById('analyzedErrors');
+            const failedErrorsEl = document.getElementById('failedErrors');
             
-            // Initialize displays
-            updateDisplays();
+            // Load initial errors
+            loadErrors();
             
-            // System boot sequence
-            const bootSequence = [
-                'SYSTEM INITIALIZING...',
-                'LOADING CYBER MODULES...',
-                'ESTABLISHING SECURE CONNECTION...',
-                'SYSTEM READY'
-            ];
+            // Auto-refresh every 30 seconds
+            setInterval(loadErrors, 30000);
             
-            let messageIndex = 0;
-            function typeMessage(message, callback) {
-                let charIndex = 0;
-                const typeInterval = setInterval(() => {
-                    if (charIndex < message.length) {
-                        addConsoleLine(`[SYSTEM] ${message[charIndex]}`);
-                        charIndex++;
-                    } else {
-                        clearInterval(typeInterval);
-                        if (callback) callback();
-                    }
-                }, 30);
-            }
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filteredErrors = errors.filter(error => 
+                    error.appName.toLowerCase().includes(searchTerm) ||
+                    error.error.toLowerCase().includes(searchTerm) ||
+                    error.userInfo.toLowerCase().includes(searchTerm)
+                );
+                renderErrors();
+            });
             
-            function startBootSequence() {
-                if (messageIndex < bootSequence.length) {
-                    typeMessage(bootSequence[messageIndex], () => {
-                        messageIndex++;
-                        setTimeout(startBootSequence, 500);
-                    });
-                } else {
-                    // Start live monitoring
-                    startLiveMonitoring();
-                }
-            }
+            // Refresh button
+            refreshBtn.addEventListener('click', function() {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+                loadErrors().finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                });
+            });
             
-            function addConsoleLine(message, type = 'system') {
-                const lineElement = document.createElement('div');
-                lineElement.className = 'console-line';
-                lineElement.innerHTML = `
-                    <span class="console-timestamp">${new Date().toLocaleTimeString()}</span>
-                    <span class="console-message">${message}</span>
-                    <span class="console-cursor">_</span>
-                `;
-                terminalOutput.appendChild(lineElement);
-                terminalOutput.scrollTop = terminalOutput.scrollHeight;
-            }
-            
-            function updateDisplays() {
-                if (uptimeDisplay) uptimeDisplay.textContent = systemData.uptime;
-                if (memoryDisplay) {
-                    const memory = JSON.parse(systemData.memory);
-                    memoryDisplay.textContent = `${Math.round(memory.heapUsed / 1024 / 1024)}MB / ${Math.round(memory.heapTotal / 1024 / 1024)}MB`;
-                }
-                if (requestsDisplay) requestsDisplay.textContent = requestCount;
-                if (serverTimeDisplay) serverTimeDisplay.textContent = new Date().toLocaleTimeString();
-            }
-            
-            function startLiveMonitoring() {
-                // Add periodic system messages
-                setInterval(() => {
-                    const messages = [
-                        'Scanning network traffic...',
-                        'Monitoring system resources...',
-                        'Updating security protocols...',
-                        'Syncing with main server...',
-                        'Analyzing data patterns...',
-                        'Optimizing performance metrics...'
-                    ];
-                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                    addConsoleLine(randomMessage, 'system');
-                }, 3000);
-                
-                // Update metrics periodically
-                setInterval(() => {
-                    fetch('/api/system/stats')
-                        .then(response => response.json())
-                        .then(data => {
-                            // Update local data
-                            systemData = {
-                                uptime: data.uptime,
-                                memory: data.memory,
-                                nodeVersion: data.system.nodeVersion,
-                                platform: data.system.platform,
-                                pid: data.system.pid
-                            };
-                            
-                            // Update displays
-                            updateDisplays();
-                            
-                            // Add memory warning if needed
-                            const memory = JSON.parse(data.memory);
-                            const memoryUsage = (memory.heapUsed / memory.heapTotal) * 100;
-                            if (memoryUsage > 80) {
-                                addConsoleLine('WARNING: Memory usage critical!', 'warning');
-                            }
-                        })
-                        .catch(error => {
-                            addConsoleLine(`ERROR: Failed to fetch system stats - ${error.message}`, 'error');
-                        });
-                }, 2000);
-                
-                // Simulate incoming requests
-                setInterval(() => {
-                    requestCount++;
-                    updateDisplays();
-                }, 5000);
-            }
-            
-            // Terminal input handling
-            function handleTerminalKey(event) {
-                const key = event.key;
-                const input = terminalInput.value.trim();
-                
-                if (key === 'Enter') {
-                    if (input) {
-                        // Add to history and execute command
-                        commandHistory.push(input);
-                        historyIndex = commandHistory.length;
-                        
-                        // Add command to console
-                        addConsoleLine(`> ${input}`, 'user');
-                        
-                        // Execute command and update displays
-                        const result = executeCommand(input);
-                        if (result.type !== 'error') {
-                            addConsoleLine(result.output, 'system');
-                            
-                            // Update displays if command affects them
-                            if (result.type === 'status' || result.type === 'uptime' || result.type === 'memory' || result.type === 'time' || result.type === 'requests') {
-                                updateDisplays();
-                            }
+            function loadErrors() {
+                return fetch('/api/errors')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            errors = data.errors;
+                            filteredErrors = errors;
+                            renderErrors();
+                            updateStats();
+                        } else {
+                            throw new Error(data.error || 'Failed to load errors');
                         }
-                        
-                        terminalInput.value = '';
-                    }
-                } else if (key === 'Backspace') {
-                    terminalInput.value = terminalInput.value.slice(0, -1);
-                } else if (key === 'ArrowUp') {
-                    if (historyIndex > 0) {
-                        historyIndex--;
-                        terminalInput.value = commandHistory[historyIndex] || '';
-                    }
-                } else if (key === 'ArrowDown') {
-                    if (historyIndex < commandHistory.length - 1) {
-                        historyIndex++;
-                        terminalInput.value = commandHistory[historyIndex] || '';
-                    }
-                }
-                }
+                    })
+                    .catch(error => {
+                        console.error('Error loading errors:', error);
+                        errorContainer.innerHTML = '<div class="no-errors">Failed to load errors. Please try again.</div>';
+                    });
             }
             
-            // Add keyboard event listener
-            terminalInput.addEventListener('keydown', handleTerminalKey);
+            function renderErrors() {
+                if (filteredErrors.length === 0) {
+                    errorContainer.innerHTML = '<div class="no-errors">No errors found.</div>';
+                    return;
+                }
+                
+                errorContainer.innerHTML = filteredErrors.map(error => `
+                    <div class="error-item" data-id="${error.id}">
+                        <div class="error-header">
+                            <div class="error-app-name">${escapeHtml(error.appName)}</div>
+                            <div class="error-timestamp">${formatDate(error.timestamp)}</div>
+                        </div>
+                        <div class="error-status status-${error.status}">${getStatusText(error.status)}</div>
+                        <div class="error-message">${escapeHtml(error.error)}</div>
+                        ${error.aiExplanation ? `<div class="error-ai-explanation">${escapeHtml(error.aiExplanation)}</div>` : ''}
+                        ${error.userInfo ? `<div style="color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;">User: ${escapeHtml(error.userInfo)}</div>` : ''}
+                    </div>
+                `).join('');
+            }
             
-            // Start the experience
-            setTimeout(startBootSequence, 1000);
+            function updateStats() {
+                const total = errors.length;
+                const pending = errors.filter(e => e.status === 'pending_analysis').length;
+                const analyzed = errors.filter(e => e.status === 'analyzed').length;
+                const failed = errors.filter(e => e.status === 'analysis_failed').length;
+                
+                totalErrorsEl.textContent = total;
+                pendingErrorsEl.textContent = pending;
+                analyzedErrorsEl.textContent = analyzed;
+                failedErrorsEl.textContent = failed;
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            function formatDate(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            }
+            
+            function getStatusText(status) {
+                switch (status) {
+                    case 'pending_analysis': return 'Pending Analysis';
+                    case 'analyzed': return 'Analyzed';
+                    case 'analysis_failed': return 'Analysis Failed';
+                    default: return 'Unknown';
+                }
+            }
         });
     </script>
 </body>
