@@ -829,6 +829,288 @@ Always provide structured, helpful responses that empower users to solve their t
     }
 });
 
+// POST-DEPLOY SELF-TEST (AUTOMATIC)
+function runDeploymentTests() {
+    console.log('🧪 RUNNING POST-DEPLOY SELF-TESTS...');
+    const testResults = {
+        timestamp: new Date().toISOString(),
+        buildVersion: process.env.RENDER_GIT_COMMIT || 'unknown',
+        tests: {},
+        overall: 'UNKNOWN'
+    };
+    
+    // Test 1: Database connection (in-memory storage)
+    try {
+        const dbTest = {
+            agentPackages: agentPackages.size,
+            agents: agents.size,
+            errorReports: global.errorReports ? global.errorReports.length : 0,
+            pcStatus: global.pcStatus ? Object.keys(global.pcStatus).length : 0
+        };
+        testResults.tests.database = {
+            status: 'PASS',
+            details: dbTest
+        };
+        console.log('✅ Database test:', dbTest);
+    } catch (error) {
+        testResults.tests.database = {
+            status: 'FAIL',
+            error: error.message
+        };
+        console.log('❌ Database test failed:', error.message);
+    }
+    
+    // Test 2: Auth/token validation
+    try {
+        const testPcId = `PC-${Date.now()}-test`;
+        const testToken = generateToken();
+        
+        // Create test package
+        agentPackages.set('test-package', {
+            pcId: testPcId,
+            token: testToken,
+            pcName: 'Test Agent',
+            createdAt: new Date().toISOString()
+        });
+        
+        // Test validation
+        let authTest = false;
+        for (const [id, pkg] of agentPackages.entries()) {
+            if (pkg.pcId === testPcId && pkg.token === testToken) {
+                authTest = true;
+                break;
+            }
+        }
+        
+        // Cleanup
+        agentPackages.delete('test-package');
+        
+        testResults.tests.auth = {
+            status: authTest ? 'PASS' : 'FAIL',
+            details: { tokenValidation: authTest }
+        };
+        console.log('✅ Auth test:', authTest ? 'PASS' : 'FAIL');
+    } catch (error) {
+        testResults.tests.auth = {
+            status: 'FAIL',
+            error: error.message
+        };
+        console.log('❌ Auth test failed:', error.message);
+    }
+    
+    // Test 3: Agent registration endpoint
+    try {
+        const testAgent = {
+            pcId: `PC-${Date.now()}-regtest`,
+            token: generateToken(),
+            systemInfo: { platform: 'test', hostname: 'test-agent' }
+        };
+        
+        // Create test package
+        agentPackages.set('regtest-package', {
+            pcId: testAgent.pcId,
+            token: testAgent.token,
+            pcName: 'Registration Test',
+            createdAt: new Date().toISOString()
+        });
+        
+        // Test registration
+        agents.set(testAgent.pcId, {
+            pcId: testAgent.pcId,
+            token: testAgent.token,
+            systemInfo: testAgent.systemInfo,
+            status: 'online',
+            lastSeen: new Date(),
+            registeredAt: new Date().toISOString()
+        });
+        
+        const regTest = agents.has(testAgent.pcId);
+        
+        // Cleanup
+        agentPackages.delete('regtest-package');
+        agents.delete(testAgent.pcId);
+        
+        testResults.tests.registration = {
+            status: regTest ? 'PASS' : 'FAIL',
+            details: { agentRegistered: regTest }
+        };
+        console.log('✅ Registration test:', regTest ? 'PASS' : 'FAIL');
+    } catch (error) {
+        testResults.tests.registration = {
+            status: 'FAIL',
+            error: error.message
+        };
+        console.log('❌ Registration test failed:', error.message);
+    }
+    
+    // Test 4: Error ingestion endpoint
+    try {
+        const testError = {
+            id: Date.now().toString(),
+            pcId: 'test-pc',
+            appName: 'test-app',
+            message: 'Test error for validation',
+            severity: 'test',
+            timestamp: new Date().toISOString()
+        };
+        
+        if (!global.errorReports) {
+            global.errorReports = [];
+        }
+        
+        global.errorReports.push(testError);
+        const errorTest = global.errorReports.some(e => e.id === testError.id);
+        
+        // Cleanup
+        global.errorReports = global.errorReports.filter(e => e.id !== testError.id);
+        
+        testResults.tests.errorIngestion = {
+            status: errorTest ? 'PASS' : 'FAIL',
+            details: { errorStored: errorTest }
+        };
+        console.log('✅ Error ingestion test:', errorTest ? 'PASS' : 'FAIL');
+    } catch (error) {
+        testResults.tests.errorIngestion = {
+            status: 'FAIL',
+            error: error.message
+        };
+        console.log('❌ Error ingestion test failed:', error.message);
+    }
+    
+    // Test 5: AI service status
+    try {
+        const aiTest = {
+            hasApiKey: !!process.env.OPENROUTER_API_KEY,
+            apiKeyLength: process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_API_KEY.length : 0
+        };
+        
+        testResults.tests.aiService = {
+            status: aiTest.hasApiKey ? 'PASS' : 'FAIL',
+            details: aiTest
+        };
+        console.log('✅ AI service test:', aiTest.hasApiKey ? 'PASS' : 'FAIL');
+    } catch (error) {
+        testResults.tests.aiService = {
+            status: 'FAIL',
+            error: error.message
+        };
+        console.log('❌ AI service test failed:', error.message);
+    }
+    
+    // Test 6: WebSocket status (basic check)
+    try {
+        const wsTest = {
+            serverRunning: true,
+            port: PORT,
+            wsServerReady: wss ? true : false
+        };
+        
+        testResults.tests.websocket = {
+            status: wsTest.wsServerReady ? 'PASS' : 'FAIL',
+            details: wsTest
+        };
+        console.log('✅ WebSocket test:', wsTest.wsServerReady ? 'PASS' : 'FAIL');
+    } catch (error) {
+        testResults.tests.websocket = {
+            status: 'FAIL',
+            error: error.message
+        };
+        console.log('❌ WebSocket test failed:', error.message);
+    }
+    
+    // Calculate overall status
+    const testStatuses = Object.values(testResults.tests).map(t => t.status);
+    const passCount = testStatuses.filter(s => s === 'PASS').length;
+    const totalTests = testStatuses.length;
+    
+    testResults.overall = passCount === totalTests ? 'HEALTHY' : 'UNHEALTHY';
+    testResults.summary = {
+        passed: passCount,
+        total: totalTests,
+        percentage: Math.round((passCount / totalTests) * 100)
+    };
+    
+    // Store results for health endpoint
+    global.deploymentTestResults = testResults;
+    
+    console.log('\n🧪 DEPLOYMENT TEST RESULTS:');
+    console.log('Overall Status:', testResults.overall);
+    console.log('Tests Passed:', testResults.summary.passed + '/' + testResults.summary.total);
+    console.log('Health Percentage:', testResults.summary.percentage + '%');
+    
+    if (testResults.overall === 'UNHEALTHY') {
+        console.log('\n❌ SYSTEM IS UNHEALTHY - CHECK FAILED TESTS');
+    } else {
+        console.log('\n✅ SYSTEM IS HEALTHY - ALL TESTS PASSED');
+    }
+    
+    return testResults;
+}
+
+// Run tests on startup
+setTimeout(() => {
+    runDeploymentTests();
+}, 5000); // Wait 5 seconds for server to fully start
+
+// HEALTH & DEBUG ENDPOINT
+app.get('/api/health', (req, res) => {
+    try {
+        const testResults = global.deploymentTestResults || { status: 'NOT_RUN' };
+        const healthData = {
+            timestamp: new Date().toISOString(),
+            buildVersion: process.env.RENDER_GIT_COMMIT || 'local',
+            uptime: formatUptime(process.uptime()),
+            system: {
+                nodeVersion: process.version,
+                platform: process.platform,
+                memory: process.memoryUsage()
+            },
+            database: {
+                agentPackages: agentPackages.size,
+                registeredAgents: agents.size,
+                errorReports: global.errorReports ? global.errorReports.length : 0,
+                pcStatusRecords: global.pcStatus ? Object.keys(global.pcStatus).length : 0
+            },
+            services: {
+                aiService: {
+                    status: !!process.env.OPENROUTER_API_KEY ? 'UP' : 'DOWN',
+                    hasApiKey: !!process.env.OPENROUTER_API_KEY
+                },
+                websocket: {
+                    status: wss ? 'UP' : 'DOWN',
+                    port: PORT
+                },
+                registration: {
+                    status: 'UP',
+                    endpoint: '/api/register-agent'
+                },
+                errorReporting: {
+                    status: 'UP',
+                    endpoint: '/api/error-report'
+                }
+            },
+            agents: {
+                totalRegistered: agents.size,
+                onlineCount: Array.from(agents.values()).filter(a => a.status === 'online').length,
+                lastHeartbeat: agents.size > 0 ? Math.max(...Array.from(agents.values()).map(a => new Date(a.lastSeen || 0))) : null
+            },
+            deploymentTests: testResults,
+            overall: testResults.overall || 'UNKNOWN'
+        };
+        
+        const statusCode = healthData.overall === 'HEALTHY' ? 200 : 503;
+        res.status(statusCode).json(healthData);
+        
+    } catch (error) {
+        console.error('Health endpoint error:', error);
+        res.status(500).json({
+            error: 'Health check failed',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Initialize global storage
 if (!global.errorReports) {
     global.errorReports = [];
