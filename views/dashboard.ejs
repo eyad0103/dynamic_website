@@ -1951,7 +1951,7 @@
         function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
             const websiteUrl = window.location.origin;
             
-            return `<!-- Error Tracking Agent for ${pcName} -->
+            const agentCode = `<!-- Error Tracking Agent for ${pcName} -->
 <script src="${websiteUrl}/error-tracking-agent.js"></script>
 <script>
     // Auto-start error tracking
@@ -1969,6 +1969,8 @@
 </script>
 
 <!-- Add this to your target PC's HTML file to start error monitoring -->`;
+            
+            return agentCode;
         }
         
         function copyAgentCode() {
@@ -2023,20 +2025,19 @@
                 
                 const card = document.createElement('div');
                 card.style.cssText = 'padding: 1rem; background: rgba(0, 0, 0, 0.5); border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);';
-                card.innerHTML = `
-                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
-                        <i class="fas fa-desktop" style="color: #00ff88; margin-right: 0.5rem;"></i>
-                        <span style="color: #00ff88; font-weight: bold;">${pc.pcName}</span>
-                    </div>
-                    <div style="display: flex; align-items: center; margin-bottom: 0.25rem;">
-                        <i class="fas ${statusIcon}" style="color: ${statusColor}; margin-right: 0.5rem; font-size: 0.8rem;"></i>
-                        <span style="color: ${statusColor}; font-size: 0.8rem;">${pc.status.toUpperCase()}</span>
-                    </div>
-                    <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
-                        <div>Errors: <span style="color: #dc3545;">${pc.errorCount || 0}</span></div>
-                        <div>Last Report: ${pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never'}</div>
-                    </div>
-                `;
+                
+                card.innerHTML = '<div style="display: flex; align-items: center; margin-bottom: 0.5rem;">' +
+                    '<i class="fas fa-desktop" style="color: #00ff88; margin-right: 0.5rem;"></i>' +
+                    '<span style="color: #00ff88; font-weight: bold;">' + pc.pcName + '</span>' +
+                    '</div>' +
+                    '<div style="display: flex; align-items: center; margin-bottom: 0.25rem;">' +
+                    '<i class="fas ' + statusIcon + '" style="color: ' + statusColor + '; margin-right: 0.5rem; font-size: 0.8rem;"></i>' +
+                    '<span style="color: ' + statusColor + '; font-size: 0.8rem;">' + pc.status.toUpperCase() + '</span>' +
+                    '</div>' +
+                    '<div style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">' +
+                    '<div>Errors: <span style="color: #dc3545;">' + (pc.errorCount || 0) + '</span></div>' +
+                    '<div>Last Report: ' + (pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never') + '</div>' +
+                    '</div>';
                 container.appendChild(card);
             });
         }
@@ -2051,30 +2052,28 @@
                 
                 const row = document.createElement('tr');
                 row.style.cssText = 'border-bottom: 1px solid rgba(0, 255, 136, 0.1);';
-                row.innerHTML = `
-                    <td style="padding: 0.75rem; color: #00ff88;">${pc.pcName}</td>
-                    <td style="padding: 0.75rem;">
-                        <span style="color: ${statusColor};">
-                            <i class="fas ${statusIcon}" style="margin-right: 0.5rem;"></i>
-                            ${pc.status.toUpperCase()}
-                        </span>
-                    </td>
-                    <td style="padding: 0.75rem; color: #dc3545;">${pc.errorCount || 0}</td>
-                    <td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">
-                        ${pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never'}
-                    </td>
-                    <td style="padding: 0.75rem;">
-                        <button onclick="viewPcDetails('${pc.pcName}')" class="form-button" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                    </td>
-                `;
+                row.innerHTML = '<td style="padding: 0.75rem; color: #00ff88;">' + pc.pcName + '</td>' +
+                    '<td style="padding: 0.75rem;">' +
+                        '<span style="color: ' + statusColor + ';">' +
+                            '<i class="fas ' + statusIcon + '" style="margin-right: 0.5rem;"></i>' +
+                            pc.status.toUpperCase() +
+                        '</span>' +
+                    '</td>' +
+                    '<td style="padding: 0.75rem; color: #dc3545;">' + (pc.errorCount || 0) + '</td>' +
+                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' +
+                        (pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never') +
+                    '</td>' +
+                    '<td style="padding: 0.75rem;">' +
+                        '<button onclick="viewPcDetails(\'' + pc.pcName + '\')" class="form-button" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">' +
+                            '<i class="fas fa-eye"></i> View' +
+                        '</button>' +
+                    '</td>';
                 tbody.appendChild(row);
             });
         }
         
         function viewPcDetails(pcName) {
-            showNotification('info', 'PC Details', `Viewing details for ${pcName}`);
+            showNotification('info', 'PC Details', 'Viewing details for ' + pcName);
             // TODO: Implement detailed view modal
         }
         
