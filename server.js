@@ -1739,11 +1739,9 @@ app.use((err, req, res, next) => {
         title: 'Server Error',
         message: 'Something went wrong on our end. Please try again later.',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
 // Start server
 app.listen(PORT, () => {
+    console.log('BOOT VERSION:', process.env.RENDER_GIT_COMMIT || 'unknown');
     console.log('🚀 Dynamic Website Server Started Successfully!');
     console.log(`📍 Server running on port ${PORT}`);
     console.log(`🌐 Local URL: http://localhost:${PORT}`);
@@ -1755,6 +1753,7 @@ app.listen(PORT, () => {
     console.log(`   POST /api/contact - Submit contact form`);
     console.log(`   GET  /api/system/status - System status API`);
     console.log(`   GET  /api/system/stats - System statistics API`);
+    console.log(`   GET  /api/health - Health check endpoint`);
     console.log(`   POST /api/errors/capture - Capture app errors for AI analysis`);
     console.log(`   GET  /api/errors - Get all error records`);
     console.log(`   GET  /api/errors/:id - Get specific error details`);
@@ -1762,8 +1761,11 @@ app.listen(PORT, () => {
     console.log(`   POST /api/save-api-key - Save OpenRouter API key`);
     console.log(`   GET  /api/api-key-status - Get API key status`);
     console.log(`   GET  /api/agent-package/:packageId - Download agent package`);
-    console.log(`   POST  /api/create-agent-package - Create new agent package`);
-    console.log(`   POST  /api/revoke-agent/:pcId - Revoke agent access`);
+    console.log(`   POST /api/create-agent-package - Create new agent package`);
+    console.log(`   POST /api/revoke-agent/:pcId - Revoke agent access`);
+    console.log(`   GET  /agent.js - Download agent file`);
+    console.log(`   GET  /setup-instructions - Get setup instructions`);
+    console.log(`   GET  /__deploy_test - Deployment test endpoint`);
     console.log(`🎨 Pages:`);
     console.log(`   GET  / - System dashboard (main)`);
     console.log(`   GET  /about - About page`);
@@ -1772,7 +1774,25 @@ app.listen(PORT, () => {
     console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
-// WebSocket server for real-time agent communication
+// Temporary deployment test route
+app.get('/__deploy_test', (req, res) => {
+    res.json({
+        commit: process.env.RENDER_GIT_COMMIT || 'unknown',
+        timestamp: new Date().toISOString(),
+        status: 'deployed'
+    });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).render('404', { 
+        title: 'Server Error',
+        message: 'Something went wrong on our end. Please try again later.',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
 const wss = new WebSocket.Server({ 
     port: process.env.WS_PORT || 3001,
     path: '/agent-ws'
