@@ -1163,7 +1163,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.2 - Auto API Key';
+        let currentVersion = 'v2.1.3 - Debug Fixed';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -1993,8 +1993,8 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             document.getElementById('agentCodeSection').style.display = 'block';
             
             // Store PC data
-            if (!global.pcs) {
-                global.pcs = [];
+            if (!window.pcs) {
+                window.pcs = [];
             }
             
             const pcData = {
@@ -2008,9 +2008,13 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 agentCode
             };
             
-            global.pcs.push(pcData);
+            window.pcs.push(pcData);
             
             showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
+            
+            // Debug: Log PC creation
+            console.log('🔧 Debug: PC Created:', pcName, pcData);
+            console.log('🔧 Debug: All PCs:', window.pcs);
             
             // Clear form
             document.getElementById('pcName').value = '';
@@ -2062,16 +2066,21 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         async function refreshPcList() {
             try {
+                console.log('🔧 Debug: Fetching PC status...');
                 const response = await fetch('/api/pc-status');
                 const data = await response.json();
                 
+                console.log('🔧 Debug: PC status response:', data);
+                
                 if (data.success) {
+                    console.log('🔧 Debug: Updating PC UI with:', data.pcStats);
                     updatePcStatusCards(data.pcStats);
                     updatePcTable(data.pcStats);
                 } else {
                     showNotification('error', 'PC Status Error', 'Failed to load PC status');
                 }
             } catch (error) {
+                console.log('🔧 Debug: PC status error:', error);
                 showNotification('error', 'PC Status Error', 'Failed to load PC status: ' + error.message);
             }
         }
@@ -2140,7 +2149,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.2 - API key auto-included in agents');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.3 - Debug logging added');
             
             // Update version badge
             updateVersionBadge();
