@@ -791,17 +791,17 @@
                     <button class="tab-button active" onclick="switchTab('errors', event)">
                         <i class="fas fa-exclamation-triangle"></i> Errors
                     </button>
-                    <button class="tab-button" onclick="switchTab('api', event)">
-                        <i class="fas fa-key"></i> API Keys
+                    <button class="tab-button" onclick="switchTab('create-pc', event)">
+                        <i class="fas fa-plus"></i> Create PC
                     </button>
-                    <button class="tab-button" onclick="switchTab('test', event)">
+                    <button class="tab-button" onclick="switchTab('registered-pcs', event)">
+                        <i class="fas fa-desktop"></i> Registered PCs
+                    </button>
+                    <button class="tab-button" onclick="switchTab('api', event)">
                         <i class="fas fa-code-branch"></i> Version
                     </button>
                     <button class="tab-button" onclick="switchTab('chat', event)">
                         <i class="fas fa-comments"></i> AI Chat
-                    </button>
-                    <button class="tab-button" onclick="switchTab('pcs', event)">
-                        <i class="fas fa-desktop"></i> Create PC
                     </button>
                 </div>
 
@@ -1155,6 +1155,39 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                         </div>
                     </div>
                 </div>
+                
+                <!-- Registered PCs Tab -->
+                <div id="registered-pcs-tab" class="tab-content">
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="green-bold">Registered PCs</span></h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 1rem;">
+                            All PCs that have been registered and are actively reporting to your dashboard. Click on any PC to view detailed information and error history.
+                        </p>
+                    </div>
+                    
+                    <!-- PC Status Overview -->
+                    <div id="pcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                        <!-- PC status cards will be populated here -->
+                    </div>
+                    
+                    <!-- PC Table -->
+                    <div style="margin-top: 2rem;">
+                        <table style="width: 100%; border-collapse: collapse; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
+                            <thead>
+                                <tr style="background: rgba(0, 255, 136, 0.1);">
+                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">PC Name</th>
+                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Status</th>
+                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Error Count</th>
+                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Last Report</th>
+                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registeredPcTableBody">
+                                <!-- Registered PC rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -1163,7 +1196,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.1.4 - Copy & Validation Fixed';
+        let currentVersion = 'v2.1.5 - Registered PCs Tab Added';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2013,8 +2046,15 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
             
             // Debug: Log PC creation
-            console.log('🔧 Debug: PC Created:', pcName, pcData);
+            console.log('🔧 Debug: PC Created:', finalPcName, {
+                location: finalPcLocation,
+                owner: finalPcOwner,
+                type: finalPcType,
+                description: finalPcDescription
+            });
+            console.log('🔧 Debug: Generated Agent Code:', agentCode.substring(0, 200) + '...');
             console.log('🔧 Debug: All PCs:', window.pcs);
+            console.log('🔧 Debug: PC Status Storage:', global.pcStatus);
             
             // Clear form
             document.getElementById('pcName').value = '';
@@ -2031,10 +2071,17 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             const websiteUrl = window.location.origin;
             const apiKey = document.getElementById('apiKey').value;
             
-            return '<!-- Error Tracking Agent for ' + pcName + ' -->' +
+            // Use provided values or defaults
+            const finalPcName = pcName || 'Unknown-PC';
+            const finalPcLocation = pcLocation || 'Unknown-Location';
+            const finalPcOwner = pcOwner || 'Unknown-Owner';
+            const finalPcType = pcType || 'Unknown-Type';
+            const finalPcDescription = pcDescription || 'No description';
+            
+            return '<!-- Error Tracking Agent for ' + finalPcName + ' -->' +
                    '<script src="' + websiteUrl + '/error-tracking-agent.js"><\/script>' +
                    '<script>' +
-                   'startErrorTracking(\'' + pcName + '\', \'' + websiteUrl + '\', \'' + apiKey + '\');' +
+                   'startErrorTracking(\'' + finalPcName + '\', \'' + websiteUrl + '\', \'' + apiKey + '\');' +
                    '<\/script>';
         }
         
@@ -2087,6 +2134,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                     console.log('🔧 Debug: Updating PC UI with:', data.pcStats);
                     updatePcStatusCards(data.pcStats);
                     updatePcTable(data.pcStats);
+                    updateRegisteredPcTable(data.pcStats);
                 } else {
                     showNotification('error', 'PC Status Error', 'Failed to load PC status');
                 }
@@ -2094,6 +2142,34 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 console.log('🔧 Debug: PC status error:', error);
                 showNotification('error', 'PC Status Error', 'Failed to load PC status: ' + error.message);
             }
+        }
+        
+        function updateRegisteredPcTable(pcStats) {
+            const tbody = document.getElementById('registeredPcTableBody');
+            tbody.innerHTML = '';
+            
+            Object.values(pcStats).forEach(pc => {
+                const statusColor = pc.status === 'online' ? '#28a745' : '#dc3545';
+                const statusIcon = pc.status === 'online' ? 'fa-check-circle' : 'fa-times-circle';
+                
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom: 1px solid rgba(0, 255, 136, 0.1);';
+                row.innerHTML = '<td style="padding: 0.75rem; color: #00ff88;">' + pc.pcName + '</td>' +
+                    '<td style="padding: 0.75rem;">' +
+                        '<span style="color: ' + statusColor + ';">' +
+                            '<i class="fas ' + statusIcon + '" style="margin-right: 0.5rem;"></i> ' +
+                            pc.status.toUpperCase() +
+                        '</span>' +
+                    '</td>' +
+                    '<td style="padding: 0.75rem; color: #dc3545;">' + (pc.errorCount || 0) + '</td>' +
+                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + (pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never') + '</td>' +
+                    '<td style="padding: 0.75rem;">' +
+                        '<button onclick="viewRegisteredPcDetails(\'' + pc.pcName + '\')" class="form-button" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">' +
+                            '<i class="fas fa-eye"></i> View' +
+                        '</button>' +
+                    '</td>';
+                tbody.appendChild(row);
+            });
         }
         
         function updatePcStatusCards(pcStats) {
@@ -2153,6 +2229,11 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             });
         }
         
+        function viewRegisteredPcDetails(pcName) {
+            showNotification('info', 'PC Details', 'Viewing details for ' + pcName);
+            // TODO: Implement detailed view modal for registered PCs
+        }
+        
         function viewPcDetails(pcName) {
             showNotification('info', 'PC Details', 'Viewing details for ' + pcName);
             // TODO: Implement detailed view modal
@@ -2160,7 +2241,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.4 - Copy & validation fixed');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.1.5 - Registered PCs Tab Added');
             
             // Update version badge
             updateVersionBadge();
