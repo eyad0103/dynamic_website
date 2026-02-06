@@ -1228,7 +1228,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.3 - Global Reference Fixed';
+        let currentVersion = 'v2.2.4 - Auto-Refresh Added';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2276,7 +2276,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.3 - Global Reference Fixed');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.4 - Auto-Refresh Added');
             
             // Update version badge
             updateVersionBadge();
@@ -2411,6 +2411,13 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             }
             
             console.log('🔧 Debug: Switched to tab:', tabName);
+            
+            // Auto-refresh PC list when switching to Registered PCs tab
+            if (tabName === 'registered-pcs') {
+                setTimeout(() => {
+                    refreshPcList();
+                }, 1000); // Wait 1 second for tab to be fully visible
+            }
         }
         
         // Load initial PC status
