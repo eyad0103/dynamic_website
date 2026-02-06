@@ -23,12 +23,12 @@ const systemBaseline = {
 };
 
 // Set the API key from the user
-process.env.OPENROUTER_API_KEY = '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';
+process.env.OPENROUTER_API_KEY = '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';
 
-// Force redeploy for API key management - v4
+// Force redeploy for API key management - v5
 console.log('🔑 API Key Management: OpenRouter API key configured');
-console.log('🚀 Dashboard v2.0.4 - JavaScript syntax issues fixed');
-console.log('🔧 Fixed switchTab function scope and syntax errors');
+console.log('🚀 Dashboard v2.0.5 - AI Chat with interactive error analysis');
+console.log('🤖 AI Error Analysis Specialist ready for interactive chat');
 
 // Request tracking middleware
 app.use((req, res, next) => {
