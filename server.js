@@ -1477,7 +1477,8 @@ Keep the explanation clear and actionable for a non-technical app owner.`;
 }
 
 // Agent management endpoints
-app.post('/api/create-agent-package', async (req, res) => {
+// Create PC endpoint - REAL connection model
+app.post('/api/create-pc', async (req, res) => {
     try {
         const { pcName, pcLocation, pcOwner, pcType, pcDescription } = req.body;
         
@@ -1488,18 +1489,36 @@ app.post('/api/create-agent-package', async (req, res) => {
             });
         }
         
-        const agentPackage = createAgentPackage(pcName, pcLocation, pcOwner, pcType, pcDescription);
+        // Generate REAL PC credentials
+        const pcId = `PC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const authToken = crypto.randomBytes(32).toString('hex');
         
-        console.log(`📦 Agent package created: ${agentPackage.pcId}`);
+        // Store in agent packages with connection metadata
+        const packageId = crypto.randomBytes(16).toString('hex');
+        agentPackages.set(packageId, {
+            pcId,
+            pcName,
+            pcLocation,
+            pcOwner,
+            pcType,
+            pcDescription,
+            authToken,
+            createdAt: new Date().toISOString(),
+            status: 'WAITING', // Waiting for agent to connect
+            lastSeen: null,
+            connectionType: 'real'
+        });
+        
+        console.log(`🔧 PC Created: ${pcId} - Waiting for agent connection`);
         
         res.json({ 
             success: true, 
-            packageId: agentPackage.packageId,
-            pcId: agentPackage.pcId,
-            downloadUrl: `/api/agent-package/${agentPackage.packageId}`
+            pcId,
+            authToken,
+            message: `PC "${pcName}" created. Waiting for agent to connect...`
         });
     } catch (error) {
-        console.error('Failed to create agent package:', error);
+        console.error('Failed to create PC:', error);
         res.status(500).json({ 
             success: false, 
             error: error.message 
@@ -1599,13 +1618,28 @@ app.post('/api/revoke-agent/:pcId', (req, res) => {
     }
 });
 
-// List all PCs endpoint
+// List all PCs endpoint - REAL connection status
 app.get('/api/pcs', (req, res) => {
     try {
         const allPCs = [];
+        const now = Date.now();
         
-        // Add agent packages (created but not yet connected)
+        // Add agent packages (created PCs with real connection status)
         agentPackages.forEach((pkg, packageId) => {
+            // Check if agent is connected via WebSocket
+            const connectedAgent = agents.get(pkg.pcId);
+            let status = 'OFFLINE';
+            let lastSeen = pkg.lastSeen;
+            
+            if (connectedAgent && connectedAgent.ws && connectedAgent.ws.readyState === WebSocket.OPEN) {
+                status = 'ONLINE';
+                lastSeen = connectedAgent.lastSeen;
+            } else if (pkg.lastSeen) {
+                // Check if last seen is within 10 seconds
+                const timeDiff = now - new Date(pkg.lastSeen).getTime();
+                status = timeDiff < 10000 ? 'ONLINE' : 'OFFLINE';
+            }
+            
             allPCs.push({
                 id: pkg.pcId,
                 name: pkg.pcName,
@@ -1613,42 +1647,13 @@ app.get('/api/pcs', (req, res) => {
                 owner: pkg.pcOwner,
                 type: pkg.pcType,
                 description: pkg.pcDescription,
-                status: 'OFFLINE',
-                token: pkg.token,
+                status: status,
+                authToken: pkg.authToken,
                 createdAt: pkg.createdAt,
-                downloaded: pkg.downloaded,
-                packageId: packageId,
-                connectionType: 'package'
+                lastSeen: lastSeen,
+                connectionType: 'real',
+                systemInfo: connectedAgent?.systemInfo || null
             });
-        });
-        
-        // Add connected agents
-        agents.forEach((agent, pcId) => {
-            // Check if this PC already exists in packages
-            const existingIndex = allPCs.findIndex(pc => pc.id === pcId);
-            if (existingIndex >= 0) {
-                // Update existing PC with agent data
-                allPCs[existingIndex].status = agent.ws && agent.ws.readyState === WebSocket.OPEN ? 'ONLINE' : 'OFFLINE';
-                allPCs[existingIndex].lastSeen = agent.lastSeen;
-                allPCs[existingIndex].systemInfo = agent.systemInfo;
-                allPCs[existingIndex].connectionType = 'connected';
-            } else {
-                // Add as standalone agent (shouldn't happen in normal flow)
-                allPCs.push({
-                    id: pcId,
-                    name: agent.systemInfo?.pcName || pcId,
-                    location: agent.systemInfo?.location || 'Unknown',
-                    owner: agent.systemInfo?.owner || 'Unknown',
-                    type: agent.systemInfo?.pcType || 'Unknown',
-                    description: agent.systemInfo?.description || '',
-                    status: agent.ws && agent.ws.readyState === WebSocket.OPEN ? 'ONLINE' : 'OFFLINE',
-                    token: agent.token,
-                    createdAt: agent.createdAt || new Date().toISOString(),
-                    lastSeen: agent.lastSeen,
-                    systemInfo: agent.systemInfo,
-                    connectionType: 'standalone'
-                });
-            }
         });
         
         // Sort by creation date (newest first)
@@ -1669,102 +1674,123 @@ app.get('/api/pcs', (req, res) => {
     }
 });
 
-// Agent Registration Endpoint - Enhanced with robust validation and logging
-app.post('/api/register-agent', async (req, res) => {
+// Heartbeat endpoint - REAL agent heartbeat
+app.post('/api/heartbeat', (req, res) => {
     try {
-        const { pcId, token, systemInfo } = req.body;
+        const { pc_id, timestamp, cpu, ram } = req.body;
         
-        // Enhanced validation
-        if (!pcId || !token) {
-            console.warn('⚠️ Registration attempt - missing required fields:', { pcId: !!pcId, token: !!token });
+        if (!pc_id) {
             return res.status(400).json({
                 success: false,
-                error: 'PC ID and token are required'
+                error: 'PC ID is required'
+            });
+        }
+        
+        const agent = agents.get(pc_id);
+        if (!agent) {
+            return res.status(404).json({
+                success: false,
+                error: 'Agent not found'
+            });
+        }
+        
+        // Update last seen and metrics
+        agent.lastSeen = new Date().toISOString();
+        if (cpu !== undefined) agent.cpu = cpu;
+        if (ram !== undefined) agent.ram = ram;
+        
+        // Update corresponding package status
+        agentPackages.forEach((pkg, packageId) => {
+            if (pkg.pcId === pc_id) {
+                pkg.status = 'ONLINE';
+                pkg.lastSeen = agent.lastSeen;
+            }
+        });
+        
+        console.log(`💓 Heartbeat received: ${pc_id} (CPU: ${cpu}%, RAM: ${ram}%)`);
+        
+        res.json({
+            success: true,
+            message: 'Heartbeat received',
+            status: 'ONLINE'
+        });
+        
+    } catch (error) {
+        console.error('Heartbeat failed:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Agent Registration Endpoint - REAL authentication with pc_id and auth_token
+app.post('/api/register-agent', async (req, res) => {
+    try {
+        const { pc_id, auth_token, hostname, OS, local_ip } = req.body;
+        
+        // Enhanced validation
+        if (!pc_id || !auth_token) {
+            console.warn('⚠️ Registration attempt - missing required fields:', { pc_id: !!pc_id, auth_token: !!auth_token });
+            return res.status(400).json({
+                success: false,
+                error: 'PC ID and auth token are required'
+            });
+        }
+        
+        // Find the PC in agent packages to validate auth token
+        let validPc = null;
+        agentPackages.forEach((pkg, packageId) => {
+            if (pkg.pcId === pc_id && pkg.authToken === auth_token) {
+                validPc = pkg;
+            }
+        });
+        
+        if (!validPc) {
+            console.warn('⚠️ Invalid PC credentials:', { pc_id, hasToken: !!auth_token });
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid PC ID or auth token'
             });
         }
         
         // Validate PC ID format
-        if (!pcId.match(/^PC-\d+-[a-z0-9]+$/)) {
-            console.warn('⚠️ Invalid PC ID format:', pcId);
+        if (!pc_id.match(/^PC-\d+-[a-z0-9]+$/)) {
+            console.warn('⚠️ Invalid PC ID format:', pc_id);
             return res.status(400).json({
                 success: false,
                 error: 'Invalid PC ID format'
             });
         }
         
-        // Validate token format
-        if (!token.match(/^[a-f0-9]{64}$/)) {
-            console.warn('⚠️ Invalid token format for PC:', pcId);
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid token format'
-            });
-        }
+        // Store agent with system info
+        const systemInfo = {
+            hostname: hostname || 'Unknown',
+            OS: OS || 'Unknown',
+            local_ip: local_ip || 'Unknown',
+            pcName: validPc.pcName,
+            location: validPc.pcLocation,
+            owner: validPc.pcOwner,
+            pcType: validPc.pcType,
+            description: validPc.pcDescription
+        };
         
-        console.log('🔍 Validating agent registration:', pcId);
-        
-        // Validate token against existing packages
-        let validToken = false;
-        let matchedPackage = null;
-        
-        for (const [packageId, pkg] of agentPackages.entries()) {
-            if (pkg.pcId === pcId && pkg.token === token) {
-                validToken = true;
-                matchedPackage = pkg;
-                pkg.downloaded = true;
-                pkg.downloadedAt = new Date().toISOString();
-                console.log('✅ Token validated for package:', packageId);
-                break;
-            }
-        }
-        
-        if (!validToken) {
-            console.warn('❌ Invalid token or PC ID:', pcId);
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid token or PC ID',
-                details: 'Please check your agent package credentials'
-            });
-        }
-        
-        // Check if agent is already registered
-        if (agents.has(pcId)) {
-            console.log('🔄 Agent re-registration:', pcId);
-            // Update existing agent
-            const existingAgent = agents.get(pcId);
-            existingAgent.systemInfo = systemInfo;
-            existingAgent.lastSeen = new Date();
-            existingAgent.status = 'online';
-        } else {
-            console.log('🆕 New agent registration:', pcId);
-        }
-        
-        // Register the agent
-        agents.set(pcId, {
-            pcId,
-            token,
-            systemInfo: systemInfo || {},
-            status: 'online',
-            lastSeen: new Date(),
-            registeredAt: new Date().toISOString(),
-            packageInfo: matchedPackage ? {
-                pcName: matchedPackage.pcName,
-                pcLocation: matchedPackage.pcLocation,
-                pcOwner: matchedPackage.pcOwner,
-                pcType: matchedPackage.pcType
-            } : null
+        agents.set(pc_id, {
+            ws: null, // Will be set when WebSocket connects
+            token: auth_token,
+            lastSeen: new Date().toISOString(),
+            systemInfo: systemInfo,
+            createdAt: validPc.createdAt,
+            registeredAt: new Date().toISOString()
         });
         
-        console.log(`🔗 Agent registered successfully: ${pcId}`);
-        console.log(`📊 Total registered agents: ${agents.size}`);
+        console.log(`✅ Agent registered successfully: ${pc_id} (${systemInfo.hostname})`);
         
         res.json({
             success: true,
             message: 'Agent registered successfully',
-            pcId,
-            serverUrl: process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com',
-            registeredAt: new Date().toISOString(),
-            totalAgents: agents.size
+            pc_id: pc_id,
+            status: 'ONLINE'
         });
         
     } catch (error) {

@@ -1515,41 +1515,11 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                     <textarea id="pcDescription" class="form-input" placeholder="Description (optional)" rows="3"></textarea>
                                 </div>
                                 <button id="createPcBtn" class="form-button" style="width: 100%;">
-                                    <i class="fas fa-plus"></i> Create Agent Package
+                                    <i class="fas fa-plus"></i> CREATE PC
                                 </button>
                             </div>
                             
-                            <!-- Agent Package Download Section -->
-                            <div id="agentPackageSection" style="display: none; margin-bottom: 2rem; padding: 1rem; background: rgba(0, 136, 255, 0.05); border-radius: 4px; border-left: 3px solid #0088ff;">
-                                <h4 style="color: #0088ff; margin-bottom: 1rem;"><span class="blue-bold">Agent Package Ready</span></h4>
-                                <div style="margin-bottom: 1rem;">
-                                    <strong>PC ID:</strong> <span id="packagePcId"></span>
-                                </div>
-                                <div style="margin-bottom: 1rem;">
-                                    <strong>Package ID:</strong> <span id="packageId"></span>
-                                </div>
-                                <div style="margin-bottom: 1rem;">
-                                    <strong>Download URL:</strong> <span id="packageDownloadUrl"></span>
-                                </div>
-                                <div style="display: flex; gap: 1rem;">
-                                    <button id="downloadPackageBtn" class="form-button" style="flex: 1;">
-                                        <i class="fas fa-download"></i> Download Package
-                                    </button>
-                                    <button id="copyPackageUrlBtn" class="form-button" style="flex: 1;">
-                                        <i class="fas fa-copy"></i> Copy Download URL
-                                    </button>
-                                </div>
-                                <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px;">
-                                    <h5 style="color: #00ff88; margin-bottom: 0.5rem;">Installation Instructions:</h5>
-                                    <ol style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin: 0; padding-left: 1.5rem;">
-                                        <li>Download the agent package</li>
-                                        <li>Extract to target PC</li>
-                                        <li>Run <code>install.bat</code> as Administrator</li>
-                                        <li>Agent will start automatically and connect to dashboard</li>
-                                    </ol>
-                                </div>
-                            </div>
-                            
+                                                        
                             <!-- PC Status Overview -->
                             <div id="pcStatusOverview" style="margin-bottom: 2rem;">
                                 <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">PC Status Overview</span></h4>
@@ -1558,36 +1528,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                 </div>
                             </div>
                             
-                            <!-- Generated Agent Code -->
-                            <div id="agentCodeSection" style="display: none; margin-bottom: 2rem; padding: 1rem; background: rgba(0, 0, 0, 0.5); border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);">
-                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="green-bold">Generated Agent Code</span></h4>
-                                <div style="margin-bottom: 1rem;">
-                                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
-                                        <span class="green-bold">✅ API Key Automatically Included!</span><br>
-                                        Your generated code already contains your configured API key. Just copy and paste it into your target PC's HTML file.
-                                    </p>
-                                    <div style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
-                                        <h5 style="color: #00ff88; margin-bottom: 0.5rem; font-size: 0.9rem;">📋 Simple Steps:</h5>
-                                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin: 0;">
-                                            1. Click "Copy Code" button below<br>
-                                            2. Paste at the end of your target HTML file (before &lt;/body&gt;)<br>
-                                            3. Save and open the HTML file in browser<br>
-                                            4. Check your dashboard for PC registration
-                                        </p>
-                                    </div>
-                                </div>
-                                <pre id="agentCode" style="background: rgba(0, 0, 0, 0.7); padding: 1rem; border-radius: 4px; overflow-x: auto; color: #00ff88; font-family: 'Courier New', monospace; font-size: 0.9rem;"></pre>
-                                </div>
-                                <div style="display: flex; gap: 1rem;">
-                                    <button id="copyAgentCodeBtn" class="form-button">
-                                        <i class="fas fa-copy"></i> Copy Code
-                                    </button>
-                                    <button id="downloadAgentBtn" class="form-button">
-                                        <i class="fas fa-download"></i> Download Agent
-                                    </button>
-                                </div>
-                            </div>
-                            
+                                                        
                             <!-- PC List -->
                             <div id="pcList">
                                 <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">Registered PCs</span></h4>
@@ -2475,9 +2416,9 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             }
             
             try {
-                showNotification('info', 'Creating Agent Package', 'Generating secure agent package...');
+                showNotification('info', 'Creating PC', 'Generating PC credentials...');
                 
-                const response = await fetch('/api/create-agent-package', {
+                const response = await fetch('/api/create-pc', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2494,15 +2435,10 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Show package download section
-                    document.getElementById('agentPackageSection').style.display = 'block';
+                    // Show PC credentials section
+                    showPcCredentials(result.pcId, result.authToken, pcName);
                     
-                    // Populate package information
-                    document.getElementById('packagePcId').textContent = result.pcId;
-                    document.getElementById('packageId').textContent = result.packageId;
-                    document.getElementById('packageDownloadUrl').textContent = result.downloadUrl;
-                    
-                    showNotification('success', 'PC Created Successfully', `${pcName} created with OFFLINE status`);
+                    showNotification('success', 'PC Created Successfully', `${pcName} created. Waiting for agent to connect...`);
                     
                     // Clear form
                     document.getElementById('pcName').value = '';
@@ -2511,18 +2447,59 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                     document.getElementById('pcType').value = '';
                     document.getElementById('pcDescription').value = '';
                     
-                    // Refresh PC list to show the newly created PC
+                    // Refresh PC list to show newly created PC
                     loadPcList();
                     
-                    console.log('🔧 Debug: Agent package created:', result);
+                    console.log('🔧 Debug: PC created:', result);
                 } else {
-                    showNotification('error', 'Package Creation Failed', result.error || 'Unknown error occurred');
+                    showNotification('error', 'PC Creation Failed', result.error || 'Unknown error occurred');
                 }
                 
             } catch (error) {
-                console.error('🔧 Debug: Package creation error:', error);
-                showNotification('error', 'Package Creation Failed', 'Failed to create agent package');
+                console.error('🔧 Debug: PC creation error:', error);
+                showNotification('error', 'PC Creation Failed', 'Failed to create PC');
             }
+        }
+        
+        function showPcCredentials(pcId, authToken, pcName) {
+            // Create credentials display section
+            const credentialsHtml = `
+                <div id="pcCredentialsSection" style="display: block; margin-bottom: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                    <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">PC Credentials - ${pcName}</span></h4>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>PC ID:</strong> <code style="background: rgba(0, 0, 0, 0.3); padding: 0.25rem 0.5rem; border-radius: 3px; color: #00ff88;">${pcId}</code>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Auth Token:</strong> <code style="background: rgba(0, 0, 0, 0.3); padding: 0.25rem 0.5rem; border-radius: 3px; color: #00ff88; word-break: break-all;">${authToken}</code>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <button onclick="copyPcCredentials('${pcId}', '${authToken}')" class="form-button" style="width: 100%;">
+                            <i class="fas fa-copy"></i> Copy Credentials
+                        </button>
+                    </div>
+                    <div style="padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px;">
+                        <h5 style="color: #00ff88; margin-bottom: 0.5rem;">🔧 Agent Setup:</h5>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin: 0;">
+                            <strong>Connection Status:</strong> <span id="connectionStatus-${pcId}" style="color: #dc3545;">WAITING FOR AGENT TO CONNECT...</span><br>
+                            <strong>Last Seen:</strong> <span id="lastSeen-${pcId}">Never</span><br>
+                            <strong>Instructions:</strong> Run agent with these credentials to connect.
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Insert after the create form
+            const createForm = document.getElementById('createPcBtn').parentElement.parentElement;
+            createForm.insertAdjacentHTML('afterend', credentialsHtml);
+        }
+        
+        function copyPcCredentials(pcId, authToken) {
+            const credentials = `PC ID: ${pcId}\nAuth Token: ${authToken}`;
+            navigator.clipboard.writeText(credentials).then(() => {
+                showNotification('success', 'Credentials Copied', 'PC credentials copied to clipboard');
+            }).catch(err => {
+                showNotification('error', 'Copy Failed', 'Failed to copy credentials: ' + err.message);
+            });
         }
         
         function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
@@ -2660,13 +2637,14 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             tbody.innerHTML = '';
             
             if (pcs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center; color: rgba(255, 255, 255, 0.6);">No PCs created yet. Use the CREATE PC tab to add your first PC.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center; color: rgba(255, 255, 255, 0.6);">No PCs created yet. Use CREATE PC tab to add your first PC.</td></tr>';
                 return;
             }
             
             pcs.forEach(pc => {
                 const statusColor = pc.status === 'ONLINE' ? '#28a745' : '#dc3545';
                 const statusIcon = pc.status === 'ONLINE' ? 'fa-check-circle' : 'fa-times-circle';
+                const lastSeenText = pc.lastSeen ? getTimeAgo(new Date(pc.lastSeen)) : 'Never';
                 
                 const row = document.createElement('tr');
                 row.style.cssText = 'border-bottom: 1px solid rgba(0, 255, 136, 0.1);';
@@ -2679,9 +2657,31 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                     '</td>' +
                     '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + pc.location + '</td>' +
                     '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + pc.owner + '</td>' +
-                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + new Date(pc.createdAt).toLocaleString() + '</td>';
+                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + lastSeenText + '</td>';
                 tbody.appendChild(row);
+                
+                // Update connection status in credentials section if exists
+                const statusElement = document.getElementById('connectionStatus-' + pc.id);
+                const lastSeenElement = document.getElementById('lastSeen-' + pc.id);
+                if (statusElement) {
+                    statusElement.textContent = pc.status;
+                    statusElement.style.color = statusColor;
+                }
+                if (lastSeenElement) {
+                    lastSeenElement.textContent = lastSeenText;
+                }
             });
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return seconds + ' seconds ago';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + ' minutes ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + ' hours ago';
+            const days = Math.floor(hours / 24);
+            return days + ' days ago';
         }
         
         async function refreshPcList() {
