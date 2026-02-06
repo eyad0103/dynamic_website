@@ -1223,43 +1223,66 @@
                 <div id="api-tab" class="tab-content">
                     <div class="api-status" id="apiStatus">
                         <i class="fas fa-info-circle"></i>
-                        <span id="apiStatusText">Checking API configuration...</span>
+                        <span id="apiStatusText">Ready to run agent automatically</span>
                     </div>
                     
-                    <form class="api-key-form" id="apiKeyForm">
-                        <div class="form-group">
-                            <label class="form-label" for="apiKey">OpenRouter API Key</label>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." value="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" style="flex: 1;">
-                                <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.5rem 1rem;">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.5rem 1rem;">
-                                    <i class="fas fa-copy"></i> Copy
+                    <!-- One-Click Agent Runner Section -->
+                    <div style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05)); border: 2px solid #00ff88; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: #00ff88; text-align: center; margin-bottom: 1rem;">
+                            🚀 One-Click Agent Runner
+                        </h3>
+                        <p style="color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
+                            Just paste your OpenRouter API key and click "Run Agent" - it's that simple!
+                        </p>
+                        
+                        <form class="api-key-form" id="apiKeyForm">
+                            <div class="form-group">
+                                <label class="form-label" for="apiKey" style="font-size: 1.1rem; font-weight: bold;">
+                                    🔑 Your OpenRouter API Key
+                                </label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." value="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" style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); runCredentials(); }">
+                                    <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is secure and used only for agent initialization</small>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <button type="button" class="form-button" onclick="runCredentials()" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
+                                    <i class="fas fa-rocket"></i> 🚀 Run Agent Now
                                 </button>
                             </div>
-                            <small style="color: rgba(0, 255, 136, 0.6); font-size: 0.8rem;">Your API key is stored securely and never exposed to the client</small>
-                        </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Advanced Options (Collapsible) -->
+                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1.5rem;">
+                        <h4 style="color: #fff; margin-bottom: 1rem; cursor: pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                            ⚙️ Advanced Options <small style="opacity: 0.7;">(click to expand)</small>
+                        </h4>
+                        <div style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label" for="testPrompt">Test Prompt</label>
+                                <textarea id="testPrompt" class="form-input form-textarea" placeholder="Enter a test prompt to verify API connectivity...">Hello, can you confirm this API key is working correctly?</textarea>
+                            </div>
 
-                        <div class="form-group">
-                            <label class="form-label" for="testPrompt">Test Prompt</label>
-                            <textarea id="testPrompt" class="form-input form-textarea" placeholder="Enter a test prompt to verify API connectivity...">Hello, can you confirm this API key is working correctly?</textarea>
-                        </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="form-button" onclick="testApiKey()">
+                                    <i class="fas fa-flask"></i> Test API
+                                </button>
+                                <button type="button" class="form-button" onclick="saveApiKey()">
+                                    <i class="fas fa-save"></i> Save Key
+                                </button>
+                            </div>
 
-                        <div style="display: flex; gap: 1rem;">
-                            <button type="button" class="form-button" onclick="testApiKey()">
-                                <i class="fas fa-flask"></i> Test API
-                            </button>
-                            <button type="button" class="form-button" onclick="saveApiKey()">
-                                <i class="fas fa-save"></i> Save Key
-                            </button>
-                            <button type="button" class="form-button" onclick="runCredentials()">
-                                <i class="fas fa-play"></i> Run Credentials
-                            </button>
+                            <div id="testResult" style="display: none;"></div>
                         </div>
-
-                        <div id="testResult" style="display: none;"></div>
-                    </form>
+                    </div>
 
                     <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
                         <h4 style="color: #00ff88; margin-bottom: 0.5rem;">Generated Agent Code</h4>

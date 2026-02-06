@@ -1,14 +1,29 @@
-// Run Credentials functionality
+// Run Credentials functionality - One-Click Automatic Agent Runner
 async function runCredentials() {
     const apiKey = document.getElementById('apiKey').value;
     
     if (!apiKey) {
         showNotification('error', 'Missing API Key', 'Please enter an API key first');
+        // Focus on API key input
+        document.getElementById('apiKey').focus();
+        return;
+    }
+    
+    // Validate API key format
+    if (!apiKey.startsWith('sk-or-v1-')) {
+        showNotification('error', 'Invalid API Key', 'Please enter a valid OpenRouter API key (starts with sk-or-v1-)');
         return;
     }
     
     try {
-        showNotification('info', 'Preparing Agent', 'Generating agent with your API key...');
+        showNotification('info', '🚀 Starting Agent', 'Initializing automatic agent runner...');
+        
+        // Disable button to prevent multiple clicks
+        const runBtn = document.querySelector('button[onclick="runCredentials()"]');
+        if (runBtn) {
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+        }
         
         // Send API key to backend
         const response = await fetch('/api/run-credentials', {
@@ -24,25 +39,46 @@ async function runCredentials() {
         const data = await response.json();
         
         if (data.success) {
-            // Open agent execution window
+            showNotification('success', '✅ Agent Ready!', 'Agent window opened automatically');
+            
+            // Open agent execution window with optimized settings
             const agentWindow = window.open(
                 `${window.location.origin}/agent-executor.html?session=${data.sessionId}`,
                 '_blank',
-                'width=900,height=700,scrollbars=yes,resizable=yes'
+                'width=1000,height=800,scrollbars=yes,resizable=yes,location=yes,menubar=no'
             );
             
-            showNotification('success', 'Agent Ready', 'Agent window opened with your API key');
+            // Check if window opened successfully
+            if (!agentWindow || agentWindow.closed || typeof agentWindow.closed === 'undefined') {
+                showNotification('warning', 'Popup Blocked', 'Please allow popups for this site to open the agent window');
+            }
             
             // Update UI to show session info
             updateRunCredentialsUI(data.sessionId, apiKey);
             
+            // Auto-switch to Registered PCs tab after 2 seconds to monitor agent
+            setTimeout(() => {
+                const registeredPcsTab = document.querySelector('button[onclick*="registered-pcs"]');
+                if (registeredPcsTab) {
+                    registeredPcsTab.click();
+                    showNotification('info', '📊 Monitoring', 'Switched to Registered PCs tab to monitor your agent');
+                }
+            }, 2000);
+            
         } else {
-            showNotification('error', 'Failed to Prepare Agent', data.error || 'Unknown error occurred');
+            showNotification('error', '❌ Failed to Start Agent', data.error || 'Unknown error occurred');
         }
         
     } catch (error) {
         console.error('Run credentials error:', error);
-        showNotification('error', 'Failed to Prepare Agent', 'Failed to prepare agent: ' + error.message);
+        showNotification('error', '❌ Connection Error', 'Failed to start agent: ' + error.message);
+    } finally {
+        // Re-enable button
+        const runBtn = document.querySelector('button[onclick="runCredentials()"]');
+        if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<i class="fas fa-play"></i> Run Credentials';
+        }
     }
 }
 
