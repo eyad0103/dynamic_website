@@ -798,6 +798,9 @@
                         <i class="fas fa-desktop"></i> Registered PCs
                     </button>
                     <button class="tab-button" onclick="switchTab('api', event)">
+                        <i class="fas fa-key"></i> API Keys
+                    </button>
+                    <button class="tab-button" onclick="switchTab('version', event)">
                         <i class="fas fa-code-branch"></i> Version
                     </button>
                     <button class="tab-button" onclick="switchTab('chat', event)">
@@ -968,6 +971,35 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                 </div>
                             </div>
                             
+                            <div id="versionDetails" style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                                <h4 style="color: #00ff88; margin-bottom: 0.5rem;">System Details</h4>
+                                <div id="versionDetailsContent" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>📅 Last Updated:</strong> <span id="lastUpdated">Loading...</span>
+                                    </div>
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>🔧 Features:</strong> AI Error Analysis, API Key Management, Notifications
+                                    </div>
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>🎯 Status:</strong> All systems operational
+                                    </div>
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>📊 Performance:</strong> <span id="performanceMetrics">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Version Tab -->
+                <div id="version-tab" class="tab-content">
+                    <div class="error-list">
+                        <div class="error-list-header">
+                            <div class="error-list-title">System Version</div>
+                        </div>
+                        
+                        <div style="padding: 1rem;">
                             <div id="versionDetails" style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
                                 <h4 style="color: #00ff88; margin-bottom: 0.5rem;">System Details</h4>
                                 <div id="versionDetailsContent" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
@@ -1196,7 +1228,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.0 - All Issues Resolved';
+        let currentVersion = 'v2.2.1 - API Keys Tab Restored';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2244,7 +2276,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.0 - All Issues Resolved');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.1 - API Keys Tab Restored');
             
             // Update version badge
             updateVersionBadge();
