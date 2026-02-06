@@ -1,11 +1,12 @@
 // Run Credentials API - Generate and execute agent code in browser
+const express = require('express');
 const crypto = require('crypto');
+const router = express.Router();
 
 // Store active credentials temporarily (in production, use Redis/database)
 const activeCredentials = new Map();
 
-function setupRunCredentialsAPI(app) {
-app.post('/api/run-credentials', (req, res) => {
+router.post('/api/run-credentials', (req, res) => {
     try {
         const { apiKey } = req.body;
         
@@ -56,7 +57,7 @@ app.post('/api/run-credentials', (req, res) => {
 });
 
 // Get credentials for session
-app.get('/api/credentials/:sessionId', (req, res) => {
+router.get('/api/credentials/:sessionId', (req, res) => {
     try {
         const { sessionId } = req.params;
         
@@ -84,7 +85,7 @@ app.get('/api/credentials/:sessionId', (req, res) => {
 });
 
 // Execute agent code (called from generated HTML)
-app.post('/api/execute-agent/:sessionId', (req, res) => {
+router.post('/api/execute-agent/:sessionId', (req, res) => {
     try {
         const { sessionId } = req.params;
         
@@ -306,6 +307,5 @@ function generateAgentCodeWithApiKey(apiKey) {
 </body>
 </html>`;
 }
-}
 
-module.exports = { generateAgentCodeWithApiKey, setupRunCredentialsAPI };
+module.exports = router;

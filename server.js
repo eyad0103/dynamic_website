@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 // Import run-credentials API
-const { generateAgentCodeWithApiKey, setupRunCredentialsAPI } = require('./run-credentials-api.js');
+const runCredentialsRouter = require('./run-credentials-api.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,8 +111,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Setup run-credentials API routes
-setupRunCredentialsAPI(app);
+// Use run-credentials API routes
+app.use(runCredentialsRouter);
 
 // Set EJS as view engine
 app.set('view engine', 'ejs');
