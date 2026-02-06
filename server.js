@@ -890,12 +890,6 @@ Keep the explanation clear and actionable for a non-technical app owner.`;
     }
 }
 
-// Handle 404
-app.use((req, res) => {
-    res.status(404).json({ 
-        success: false,
-        error: 'Page not found',
-        message: 'The page you\'re looking for doesn\'t exist.',
         requestedPath: req.path
     });
 });
