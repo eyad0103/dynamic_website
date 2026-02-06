@@ -25,8 +25,9 @@ const systemBaseline = {
 // Set the API key from the user
 process.env.OPENROUTER_API_KEY = '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';
 
-// Force redeploy for API key management - v2
+// Force redeploy for API key management - v3
 console.log('🔑 API Key Management: OpenRouter API key configured');
+console.log('🚀 Dashboard v2.0.2 - Enhanced with Test tab and notifications');
 
 // Request tracking middleware
 app.use((req, res, next) => {
