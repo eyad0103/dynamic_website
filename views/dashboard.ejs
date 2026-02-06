@@ -1228,7 +1228,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         // AI Error Analysis Dashboard with API Key Management and Notifications
         let errors = [];
         let filteredErrors = [];
-        let currentVersion = 'v2.2.2 - PC Creation Fixed';
+        let currentVersion = 'v2.2.3 - Global Reference Fixed';
         
         // Global DOM elements
         let errorContainer, searchInput, refreshBtn, totalErrorsEl, pendingErrorsEl, analyzedErrorsEl, failedErrorsEl;
@@ -2058,8 +2058,8 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             document.getElementById('agentCodeSection').style.display = 'block';
             
             // Store PC data
-            if (!global.pcs) {
-                global.pcs = [];
+            if (!window.pcs) {
+                window.pcs = [];
             }
             
             const pcData = {
@@ -2073,7 +2073,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 agentCode
             };
             
-            global.pcs.push(pcData);
+            window.pcs.push(pcData);
             
             showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
             
@@ -2276,7 +2276,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
-            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.2 - PC Creation Fixed');
+            showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.2.3 - Global Reference Fixed');
             
             // Update version badge
             updateVersionBadge();
