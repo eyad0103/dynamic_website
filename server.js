@@ -454,6 +454,78 @@ app.get('/debug-api', (req, res) => {
     res.sendFile(__dirname + '/debug-api.html');
 });
 
+// AI Chat endpoint
+app.post('/api/chat', async (req, res) => {
+    const { message } = req.body;
+    
+    if (!message) {
+        return res.status(400).json({
+            success: false,
+            error: 'Message is required'
+        });
+    }
+    
+    try {
+        const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+        
+        if (!openrouterApiKey) {
+            return res.status(500).json({
+                success: false,
+                error: 'OpenRouter API key not configured'
+            });
+        }
+        
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${openrouterApiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                'X-Title': 'AI Assistant Chat'
+            },
+            body: JSON.stringify({
+                model: 'anthropic/claude-3-haiku',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a helpful AI assistant for an error analysis dashboard. You help users with debugging, error analysis, and technical questions. Be concise and helpful.'
+                    },
+                    {
+                        role: 'user',
+                        content: message
+                    }
+                ],
+                max_tokens: 500,
+                temperature: 0.7
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid response format from OpenRouter API');
+        }
+        
+        const aiResponse = data.choices[0].message.content;
+        
+        res.json({
+            success: true,
+            response: aiResponse
+        });
+        
+    } catch (error) {
+        console.error('Chat API error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // Test EJS template rendering
 app.get('/test-ejs', (req, res) => {
     res.render('test-ejs', { 
