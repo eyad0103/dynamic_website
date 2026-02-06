@@ -439,9 +439,12 @@ app.get('/debug-api', (req, res) => {
     res.sendFile(__dirname + '/debug-api.html');
 });
 
-// Test notifications page
-app.get('/test-notifications', (req, res) => {
-    res.sendFile(__dirname + '/test-notifications.html');
+// Test EJS template rendering
+app.get('/test-ejs', (req, res) => {
+    res.render('test-ejs', { 
+        title: 'EJS Test',
+        message: 'EJS is working properly'
+    });
 });
 
 // AI Analysis Function
