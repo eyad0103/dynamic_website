@@ -1185,7 +1185,7 @@
                         <i class="fas fa-exclamation-triangle"></i> Errors
                     </button>
                     <button class="tab-button" onclick="switchTab('pcs', event)">
-                        <i class="fas fa-plus"></i> Create PC Agent
+                        <i class="fas fa-plus"></i> ➡️ CREATE PC
                     </button>
                     <button class="tab-button" onclick="switchTab('registered-pcs', event)">
                         <i class="fas fa-desktop"></i> Registered PCs
@@ -1597,9 +1597,9 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                             <tr style="background: rgba(0, 255, 136, 0.1);">
                                                 <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">PC Name</th>
                                                 <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Status</th>
-                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Error Count</th>
-                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Last Report</th>
-                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Actions</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Location</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Owner</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Created At</th>
                                             </tr>
                                         </thead>
                                         <tbody id="pcTableBody">
@@ -2502,7 +2502,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                     document.getElementById('packageId').textContent = result.packageId;
                     document.getElementById('packageDownloadUrl').textContent = result.downloadUrl;
                     
-                    showNotification('success', 'Agent Package Created', `Package for ${pcName} created successfully`);
+                    showNotification('success', 'PC Created Successfully', `${pcName} created with OFFLINE status`);
                     
                     // Clear form
                     document.getElementById('pcName').value = '';
@@ -2510,6 +2510,9 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                     document.getElementById('pcOwner').value = '';
                     document.getElementById('pcType').value = '';
                     document.getElementById('pcDescription').value = '';
+                    
+                    // Refresh PC list to show the newly created PC
+                    loadPcList();
                     
                     console.log('🔧 Debug: Agent package created:', result);
                 } else {
@@ -2630,6 +2633,55 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             } catch (error) {
                 showNotification('error', 'Copy Failed', 'Failed to copy package URL: ' + error.message);
             }
+        }
+        
+        async function loadPcList() {
+            try {
+                console.log('🔧 Debug: Loading PC list...');
+                const response = await fetch('/api/pcs');
+                const data = await response.json();
+                
+                console.log('🔧 Debug: PC list response:', data);
+                
+                if (data.success) {
+                    console.log('🔧 Debug: Updating PC UI with:', data.pcs);
+                    updatePcListDisplay(data.pcs);
+                } else {
+                    showNotification('error', 'PC List Error', 'Failed to load PC list');
+                }
+            } catch (error) {
+                console.log('🔧 Debug: PC list error:', error);
+                showNotification('error', 'PC List Error', 'Failed to load PC list: ' + error.message);
+            }
+        }
+        
+        function updatePcListDisplay(pcs) {
+            const tbody = document.getElementById('pcTableBody');
+            tbody.innerHTML = '';
+            
+            if (pcs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center; color: rgba(255, 255, 255, 0.6);">No PCs created yet. Use the CREATE PC tab to add your first PC.</td></tr>';
+                return;
+            }
+            
+            pcs.forEach(pc => {
+                const statusColor = pc.status === 'ONLINE' ? '#28a745' : '#dc3545';
+                const statusIcon = pc.status === 'ONLINE' ? 'fa-check-circle' : 'fa-times-circle';
+                
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom: 1px solid rgba(0, 255, 136, 0.1);';
+                row.innerHTML = '<td style="padding: 0.75rem; color: #00ff88;">' + pc.name + '</td>' +
+                    '<td style="padding: 0.75rem;">' +
+                        '<span style="color: ' + statusColor + ';">' +
+                            '<i class="fas ' + statusIcon + '" style="margin-right: 0.5rem;"></i>' +
+                            pc.status +
+                        '</span>' +
+                    '</td>' +
+                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + pc.location + '</td>' +
+                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + pc.owner + '</td>' +
+                    '<td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">' + new Date(pc.createdAt).toLocaleString() + '</td>';
+                tbody.appendChild(row);
+            });
         }
         
         async function refreshPcList() {
@@ -2865,7 +2917,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             }
             
             if (refreshPcsBtn) {
-                refreshPcsBtn.addEventListener('click', refreshPcList);
+                refreshPcsBtn.addEventListener('click', loadPcList);
             }
             
             if (copyAgentCodeBtn) {
@@ -2907,8 +2959,8 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             }
         }
         
-        // Load initial PC status
-            refreshPcList();
+        // Load initial PC list
+            loadPcList();
         });
     </script>
 </body>

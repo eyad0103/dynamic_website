@@ -1599,6 +1599,76 @@ app.post('/api/revoke-agent/:pcId', (req, res) => {
     }
 });
 
+// List all PCs endpoint
+app.get('/api/pcs', (req, res) => {
+    try {
+        const allPCs = [];
+        
+        // Add agent packages (created but not yet connected)
+        agentPackages.forEach((pkg, packageId) => {
+            allPCs.push({
+                id: pkg.pcId,
+                name: pkg.pcName,
+                location: pkg.pcLocation,
+                owner: pkg.pcOwner,
+                type: pkg.pcType,
+                description: pkg.pcDescription,
+                status: 'OFFLINE',
+                token: pkg.token,
+                createdAt: pkg.createdAt,
+                downloaded: pkg.downloaded,
+                packageId: packageId,
+                connectionType: 'package'
+            });
+        });
+        
+        // Add connected agents
+        agents.forEach((agent, pcId) => {
+            // Check if this PC already exists in packages
+            const existingIndex = allPCs.findIndex(pc => pc.id === pcId);
+            if (existingIndex >= 0) {
+                // Update existing PC with agent data
+                allPCs[existingIndex].status = agent.ws && agent.ws.readyState === WebSocket.OPEN ? 'ONLINE' : 'OFFLINE';
+                allPCs[existingIndex].lastSeen = agent.lastSeen;
+                allPCs[existingIndex].systemInfo = agent.systemInfo;
+                allPCs[existingIndex].connectionType = 'connected';
+            } else {
+                // Add as standalone agent (shouldn't happen in normal flow)
+                allPCs.push({
+                    id: pcId,
+                    name: agent.systemInfo?.pcName || pcId,
+                    location: agent.systemInfo?.location || 'Unknown',
+                    owner: agent.systemInfo?.owner || 'Unknown',
+                    type: agent.systemInfo?.pcType || 'Unknown',
+                    description: agent.systemInfo?.description || '',
+                    status: agent.ws && agent.ws.readyState === WebSocket.OPEN ? 'ONLINE' : 'OFFLINE',
+                    token: agent.token,
+                    createdAt: agent.createdAt || new Date().toISOString(),
+                    lastSeen: agent.lastSeen,
+                    systemInfo: agent.systemInfo,
+                    connectionType: 'standalone'
+                });
+            }
+        });
+        
+        // Sort by creation date (newest first)
+        allPCs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        res.json({
+            success: true,
+            pcs: allPCs,
+            total: allPCs.length
+        });
+        
+    } catch (error) {
+        console.error('Failed to list PCs:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // Agent Registration Endpoint - Enhanced with robust validation and logging
 app.post('/api/register-agent', async (req, res) => {
     try {
@@ -1739,6 +1809,9 @@ app.use((err, req, res, next) => {
         title: 'Server Error',
         message: 'Something went wrong on our end. Please try again later.',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log('BOOT VERSION:', process.env.RENDER_GIT_COMMIT || 'unknown');
