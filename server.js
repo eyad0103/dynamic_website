@@ -557,11 +557,201 @@ Always provide structured, helpful responses that empower users to solve their t
     }
 });
 
-// Test EJS template rendering
-app.get('/test-ejs', (req, res) => {
-    res.render('test-ejs', { 
-        title: 'EJS Test',
-        message: 'EJS is working properly'
+// Error Report Endpoint
+app.post('/api/error-report', async (req, res) => {
+    const { pcName, errorCount, lastError, timestamp, userAgent, url, appVersion, agentVersion } = req.body;
+    
+    try {
+        console.log('📡 Received error report from:', pcName);
+        
+        // Store error report in memory (in production, this would go to database)
+        if (!global.errorReports) {
+            global.errorReports = [];
+        }
+        
+        const report = {
+            pcName,
+            errorCount,
+            lastError,
+            timestamp,
+            userAgent,
+            url,
+            appVersion,
+            agentVersion,
+            receivedAt: new Date().toISOString()
+        };
+        
+        global.errorReports.push(report);
+        
+        // Keep only last 100 reports per PC
+        if (global.errorReports.length > 100) {
+            global.errorReports = global.errorReports.slice(-100);
+        }
+        
+        // Send to AI for analysis (if API key is configured)
+        if (process.env.OPENROUTER_API_KEY) {
+            try {
+                const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
+                        'X-Title': 'Error Analysis'
+                    },
+                    body: JSON.stringify({
+                        model: 'anthropic/claude-3-haiku',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `Analyze this application error and provide actionable fixes:
+                                
+                                **Error Details:**
+                                App: ${lastError.appName || 'Unknown'}
+                                Error: ${lastError.details || 'Unknown'}
+                                User: ${lastError.userAgent || 'Unknown'}
+                                URL: ${lastError.url || 'Unknown'}
+                                Timestamp: ${lastError.timestamp || 'Unknown'}
+                                App Version: ${lastError.appVersion || 'Unknown'}
+                                PC: ${pcName}
+                                
+                                Please provide:
+                                1. Root cause analysis
+                                2. Step-by-step fix instructions
+                                3. Prevention recommendations
+                                4. Code examples if applicable`
+                            }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0.3
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🤖 AI Analysis completed for:', pcName);
+                    
+                    // Store AI analysis with the error report
+                    if (data.choices && data.choices[0]) {
+                        report.aiAnalysis = data.choices[0].message.content;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ AI Analysis failed for:', pcName, error.message);
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: 'Error report received and processed',
+            reportId: report.timestamp
+        });
+        
+    } catch (error) {
+        console.error('❌ Error processing error report:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// PC Management Endpoints
+app.get('/api/pc-status', (req, res) => {
+    try {
+        const reports = global.errorReports || [];
+        const pcStats = {};
+        
+        // Group reports by PC name
+        reports.forEach(report => {
+            if (!pcStats[report.pcName]) {
+                pcStats[report.pcName] = {
+                    pcName: report.pcName,
+                    status: report.timestamp ? 'online' : 'offline',
+                    errorCount: report.errorCount || 0,
+                    lastError: report.lastError || null,
+                    lastReportSent: report.lastReportSent || null,
+                    agentVersion: report.agentVersion || 'v1.0.0',
+                    appVersion: report.appVersion || 'Unknown'
+                };
+            }
+        });
+        
+        res.json({
+            success: true,
+            pcStats: pcStats,
+            totalReports: reports.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting PC status:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get all error reports for dashboard
+app.get('/api/error-reports', (req, res) => {
+    try {
+        const reports = global.errorReports || [];
+        
+        // Sort by timestamp (most recent first)
+        const sortedReports = reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        res.json({
+            success: true,
+            reports: sortedReports
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting error reports:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get error reports by PC name
+app.get('/api/pc-reports/:pcName', (req, res) => {
+    try {
+        const pcName = req.params.pcName;
+        const reports = global.errorReports || [];
+        const pcReports = reports.filter(r => r.pcName === pcName);
+        
+        // Sort by timestamp (most recent first)
+        const sortedReports = pcReports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        res.json({
+            success: true,
+            pcName: pcName,
+            reports: sortedReports,
+            totalReports: pcReports.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting PC reports:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Serve error tracking agent JavaScript
+app.get('/error-tracking-agent.js', (req, res) => {
+    res.sendFile(__dirname + '/error-tracking-agent.js');
+});
+
+// Test endpoint for error reporting
+app.get('/api/test-error-report', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Error reporting endpoint is working',
+        test: 'POST /api/error-report'
     });
 });
 

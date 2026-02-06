@@ -756,10 +756,11 @@
                 <h1 class="dashboard-title">
                     <i class="fas fa-brain"></i> AI Error Analysis Dashboard
                 </h1>
-                <div class="status-indicator">
-                    <div class="status-dot"></div>
-                    <span>MONITORING</span>
-                </div>
+                <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.7);">Real-time error monitoring and AI-powered analysis</p>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>MONITORING</span>
             </div>
         </header>
 
@@ -798,6 +799,9 @@
                     </button>
                     <button class="tab-button" onclick="switchTab('chat', event)">
                         <i class="fas fa-comments"></i> AI Chat
+                    </button>
+                    <button class="tab-button" onclick="switchTab('pcs', event)">
+                        <i class="fas fa-desktop"></i> Create PC
                     </button>
                 </div>
 
@@ -1012,6 +1016,95 @@
                                     <div style="margin-bottom: 0.5rem;">
                                         <strong>💬 <span class="green-bold">Clear Communication:</span></strong> Human-readable explanations with color coding
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create PC Tab -->
+                <div id="pcs-tab" class="tab-content">
+                    <div class="error-list">
+                        <div class="error-list-header">
+                            <div class="error-list-title">PC Management</div>
+                            <div class="error-filters">
+                                <button id="refreshPcsBtn" class="refresh-btn">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div style="padding: 1rem;">
+                            <!-- Create New PC Section -->
+                            <div style="margin-bottom: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">Create New PC Agent</span></h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <input type="text" id="pcName" class="form-input" placeholder="PC Name (e.g., Office-PC, Laptop-01)">
+                                    <input type="text" id="pcLocation" class="form-input" placeholder="Location (e.g., Office, Home)">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <input type="text" id="pcOwner" class="form-input" placeholder="Owner Name">
+                                    <select id="pcType" class="form-input">
+                                        <option value="">Select PC Type</option>
+                                        <option value="desktop">Desktop</option>
+                                        <option value="laptop">Laptop</option>
+                                        <option value="server">Server</option>
+                                        <option value="workstation">Workstation</option>
+                                    </select>
+                                </div>
+                                <div style="margin-bottom: 1rem;">
+                                    <textarea id="pcDescription" class="form-input" placeholder="Description (optional)" rows="3"></textarea>
+                                </div>
+                                <button id="createPcBtn" class="form-button" style="width: 100%;">
+                                    <i class="fas fa-plus"></i> Create PC Agent
+                                </button>
+                            </div>
+                            
+                            <!-- PC Status Overview -->
+                            <div id="pcStatusOverview" style="margin-bottom: 2rem;">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">PC Status Overview</span></h4>
+                                <div id="pcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                                    <!-- PC status cards will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Generated Agent Code -->
+                            <div id="agentCodeSection" style="display: none; margin-bottom: 2rem; padding: 1rem; background: rgba(0, 0, 0, 0.5); border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="green-bold">Generated Agent Code</span></h4>
+                                <div style="margin-bottom: 1rem;">
+                                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                                        <span class="green-bold">Instructions:</span> Copy this code and add it to your target PC's HTML file:
+                                    </p>
+                                    <pre id="agentCode" style="background: rgba(0, 0, 0, 0.7); padding: 1rem; border-radius: 4px; overflow-x: auto; color: #00ff88; font-family: 'Courier New', monospace; font-size: 0.9rem;"></pre>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <button id="copyAgentCodeBtn" class="form-button">
+                                        <i class="fas fa-copy"></i> Copy Code
+                                    </button>
+                                    <button id="downloadAgentBtn" class="form-button">
+                                        <i class="fas fa-download"></i> Download Agent
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- PC List -->
+                            <div id="pcList">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="blue-bold">Registered PCs</span></h4>
+                                <div id="pcTable" style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="background: rgba(0, 255, 136, 0.1);">
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">PC Name</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Status</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Error Count</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Last Report</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pcTableBody">
+                                            <!-- PC rows will be populated here -->
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -1804,6 +1897,187 @@
             `;
         }
         
+        // PC Management Functions
+        function createPcAgent() {
+            const pcName = document.getElementById('pcName').value;
+            const pcLocation = document.getElementById('pcLocation').value;
+            const pcOwner = document.getElementById('pcOwner').value;
+            const pcType = document.getElementById('pcType').value;
+            const pcDescription = document.getElementById('pcDescription').value;
+            
+            if (!pcName || !pcLocation || !pcOwner || !pcType) {
+                showNotification('error', 'PC Creation Error', 'Please fill in all required fields');
+                return;
+            }
+            
+            // Generate agent code
+            const agentCode = generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription);
+            
+            // Display the generated code
+            document.getElementById('agentCode').textContent = agentCode;
+            document.getElementById('agentCodeSection').style.display = 'block';
+            
+            // Store PC data
+            if (!global.pcs) {
+                global.pcs = [];
+            }
+            
+            const pcData = {
+                pcName,
+                pcLocation,
+                pcOwner,
+                pcType,
+                pcDescription,
+                createdAt: new Date().toISOString(),
+                status: 'pending',
+                agentCode
+            };
+            
+            global.pcs.push(pcData);
+            
+            showNotification('success', 'PC Agent Created', `Agent for ${pcName} created successfully`);
+            
+            // Clear form
+            document.getElementById('pcName').value = '';
+            document.getElementById('pcLocation').value = '';
+            document.getElementById('pcOwner').value = '';
+            document.getElementById('pcType').value = '';
+            document.getElementById('pcDescription').value = '';
+            
+            // Refresh PC list
+            refreshPcList();
+        }
+        
+        function generateAgentCode(pcName, pcLocation, pcOwner, pcType, pcDescription) {
+            const websiteUrl = window.location.origin;
+            
+            return `<!-- Error Tracking Agent for ${pcName} -->
+<script src="${websiteUrl}/error-tracking-agent.js"></script>
+<script>
+    // Auto-start error tracking
+    startErrorTracking('${pcName}', '${websiteUrl}', 'your-api-key');
+    
+    // Optional: Set additional PC info
+    window.pcInfo = {
+        name: '${pcName}',
+        location: '${pcLocation}',
+        owner: '${pcOwner}',
+        type: '${pcType}',
+        description: '${pcDescription}',
+        createdAt: '${new Date().toISOString()}'
+    };
+</script>
+
+<!-- Add this to your target PC's HTML file to start error monitoring -->`;
+        }
+        
+        function copyAgentCode() {
+            const agentCode = document.getElementById('agentCode').textContent;
+            navigator.clipboard.writeText(agentCode).then(() => {
+                showNotification('success', 'Code Copied', 'Agent code copied to clipboard');
+            }).catch(err => {
+                showNotification('error', 'Copy Failed', 'Failed to copy code: ' + err.message);
+            });
+        }
+        
+        function downloadAgent() {
+            const agentCode = document.getElementById('agentCode').textContent;
+            const pcName = document.getElementById('pcName').value || 'error-agent';
+            
+            const blob = new Blob([agentCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${pcName}-error-agent.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('success', 'Agent Downloaded', `Agent file downloaded as ${pcName}-error-agent.html`);
+        }
+        
+        async function refreshPcList() {
+            try {
+                const response = await fetch('/api/pc-status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updatePcStatusCards(data.pcStats);
+                    updatePcTable(data.pcStats);
+                } else {
+                    showNotification('error', 'PC Status Error', 'Failed to load PC status');
+                }
+            } catch (error) {
+                showNotification('error', 'PC Status Error', 'Failed to load PC status: ' + error.message);
+            }
+        }
+        
+        function updatePcStatusCards(pcStats) {
+            const container = document.getElementById('pcStatusCards');
+            container.innerHTML = '';
+            
+            Object.values(pcStats).forEach(pc => {
+                const statusColor = pc.status === 'online' ? '#28a745' : '#dc3545';
+                const statusIcon = pc.status === 'online' ? 'fa-check-circle' : 'fa-times-circle';
+                
+                const card = document.createElement('div');
+                card.style.cssText = 'padding: 1rem; background: rgba(0, 0, 0, 0.5); border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);';
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                        <i class="fas fa-desktop" style="color: #00ff88; margin-right: 0.5rem;"></i>
+                        <span style="color: #00ff88; font-weight: bold;">${pc.pcName}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin-bottom: 0.25rem;">
+                        <i class="fas ${statusIcon}" style="color: ${statusColor}; margin-right: 0.5rem; font-size: 0.8rem;"></i>
+                        <span style="color: ${statusColor}; font-size: 0.8rem;">${pc.status.toUpperCase()}</span>
+                    </div>
+                    <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+                        <div>Errors: <span style="color: #dc3545;">${pc.errorCount || 0}</span></div>
+                        <div>Last Report: ${pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never'}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function updatePcTable(pcStats) {
+            const tbody = document.getElementById('pcTableBody');
+            tbody.innerHTML = '';
+            
+            Object.values(pcStats).forEach(pc => {
+                const statusColor = pc.status === 'online' ? '#28a745' : '#dc3545';
+                const statusIcon = pc.status === 'online' ? 'fa-check-circle' : 'fa-times-circle';
+                
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom: 1px solid rgba(0, 255, 136, 0.1);';
+                row.innerHTML = `
+                    <td style="padding: 0.75rem; color: #00ff88;">${pc.pcName}</td>
+                    <td style="padding: 0.75rem;">
+                        <span style="color: ${statusColor};">
+                            <i class="fas ${statusIcon}" style="margin-right: 0.5rem;"></i>
+                            ${pc.status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem; color: #dc3545;">${pc.errorCount || 0}</td>
+                    <td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                        ${pc.lastReportSent ? new Date(pc.lastReportSent).toLocaleString() : 'Never'}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <button onclick="viewPcDetails('${pc.pcName}')" class="form-button" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function viewPcDetails(pcName) {
+            showNotification('info', 'PC Details', `Viewing details for ${pcName}`);
+            // TODO: Implement detailed view modal
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             // Show welcome notification
             showNotification('info', 'Dashboard Loaded', 'AI Error Analysis Dashboard v2.0.5 - Interactive AI Chat ready');
@@ -1884,6 +2158,31 @@
             if (clearChatBtn) {
                 clearChatBtn.addEventListener('click', clearChat);
             }
+            
+            // PC Management functionality
+            const createPcBtn = document.getElementById('createPcBtn');
+            const refreshPcsBtn = document.getElementById('refreshPcsBtn');
+            const copyAgentCodeBtn = document.getElementById('copyAgentCodeBtn');
+            const downloadAgentBtn = document.getElementById('downloadAgentBtn');
+            
+            if (createPcBtn) {
+                createPcBtn.addEventListener('click', createPcAgent);
+            }
+            
+            if (refreshPcsBtn) {
+                refreshPcsBtn.addEventListener('click', refreshPcList);
+            }
+            
+            if (copyAgentCodeBtn) {
+                copyAgentCodeBtn.addEventListener('click', copyAgentCode);
+            }
+            
+            if (downloadAgentBtn) {
+                downloadAgentBtn.addEventListener('click', downloadAgent);
+            }
+            
+            // Load initial PC status
+            refreshPcList();
         });
     </script>
 </body>
