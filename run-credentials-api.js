@@ -1,30 +1,37 @@
-// Run Credentials API - Generate and execute agent code in browser
+// Real Agent API - Server-side agent management
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 
-// Store active credentials temporarily (in production, use Redis/database)
-const activeCredentials = new Map();
+// Store registered PCs and their status
+const registeredPCs = new Map();
+const pcStatus = new Map(); // ONLINE/OFFLINE status based on heartbeats
 
-// Agent execution state management
-const agentStates = new Map();
-const executionLocks = new Map();
-
-// Agent state constants
-const AGENT_STATES = {
-    IDLE: 'IDLE',
-    PREPARING: 'PREPARING',
-    RUNNING: 'RUNNING',
-    SUCCESS: 'SUCCESS',
-    FAILED: 'FAILED',
-    TIMEOUT: 'TIMEOUT'
+// PC status constants
+const PC_STATES = {
+    ONLINE: 'ONLINE',
+    OFFLINE: 'OFFLINE',
+    WAITING: 'WAITING_FOR_AGENT'
 };
 
+// Generate secure PC credentials
+function generatePCCredentials() {
+    const pcId = `PC-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const authToken = crypto.randomBytes(32).toString('hex');
+    const createdAt = new Date().toISOString();
+    
+    return {
+        pcId,
+        authToken,
+        createdAt,
+        serverUrl: process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com'
+    };
+}
+
 // Phase 1: Input Validation (Fast Fail)
-function validateInput(apiKey, pcId) {
+function validateAPIKey(apiKey) {
     const startTime = process.hrtime.bigint();
     
-    // Check if API key exists
     if (!apiKey || typeof apiKey !== 'string') {
         return {
             valid: false,
@@ -34,7 +41,6 @@ function validateInput(apiKey, pcId) {
         };
     }
     
-    // Check API key format
     if (!apiKey.startsWith('sk-or-v1-')) {
         return {
             valid: false,
@@ -44,8 +50,6 @@ function validateInput(apiKey, pcId) {
         };
     }
     
-    // Check if this is the latest saved key (simulate key validation)
-    // In production, this would check against stored latest key
     if (apiKey.length < 20) {
         return {
             valid: false,
@@ -56,7 +60,7 @@ function validateInput(apiKey, pcId) {
     }
     
     const endTime = process.hrtime.bigint();
-    const duration = Number(endTime - startTime) / 1000000; // Convert to milliseconds
+    const duration = Number(endTime - startTime) / 1000000;
     
     if (duration > 100) {
         console.warn(`⚠️ Validation took ${duration}ms (should be ≤100ms)`);
@@ -68,102 +72,15 @@ function validateInput(apiKey, pcId) {
     };
 }
 
-// Phase 2: Execution Lock
-function checkExecutionLock(pcId) {
-    if (executionLocks.has(pcId)) {
-        return {
-            locked: true,
-            error: 'Agent already running for this PC',
-            code: 'AGENT_ALREADY_RUNNING',
-            status: 409
-        };
-    }
-    return { locked: false };
-}
-
-function setExecutionLock(pcId, sessionId) {
-    executionLocks.set(pcId, {
-        sessionId: sessionId,
-        timestamp: Date.now()
-    });
-}
-
-function clearExecutionLock(pcId) {
-    executionLocks.delete(pcId);
-}
-
-// Phase 3: State Machine
-function setAgentState(sessionId, state, metadata = {}) {
-    const currentState = agentStates.get(sessionId) || {};
-    const previousState = currentState.state;
-    
-    agentStates.set(sessionId, {
-        ...currentState,
-        state: state,
-        previousState: previousState,
-        timestamp: Date.now(),
-        ...metadata
-    });
-    
-    console.log(`🔄 State transition: ${sessionId.substring(0, 8)} ${previousState} → ${state}`);
-    return agentStates.get(sessionId);
-}
-
-function getAgentState(sessionId) {
-    return agentStates.get(sessionId) || { state: AGENT_STATES.IDLE };
-}
-
-// Phase 4: Timeout Control
-function setupTimeout(sessionId, timeoutMs = 10000) {
-    setTimeout(() => {
-        const state = getAgentState(sessionId);
-        if (state.state === AGENT_STATES.PREPARING || state.state === AGENT_STATES.RUNNING) {
-            setAgentState(sessionId, AGENT_STATES.TIMEOUT, {
-                reason: `Timeout after ${timeoutMs}ms`
-            });
-            clearExecutionLock(state.pcId);
-        }
-    }, timeoutMs);
-}
-
-// Phase 6: Heartbeat Confirmation
-function recordHeartbeat(sessionId) {
-    const state = getAgentState(sessionId);
-    if (state.state === AGENT_STATES.PREPARING) {
-        setAgentState(sessionId, AGENT_STATES.RUNNING, {
-            firstHeartbeat: Date.now()
-        });
-    }
-    
-    // Update last heartbeat
-    agentStates.set(sessionId, {
-        ...state,
-        lastHeartbeat: Date.now()
-    });
-}
-
-function checkHeartbeatTimeout(sessionId, timeoutMs = 3000) {
-    const state = getAgentState(sessionId);
-    if (state.state === AGENT_STATES.RUNNING && state.lastHeartbeat) {
-        const timeSinceHeartbeat = Date.now() - state.lastHeartbeat;
-        if (timeSinceHeartbeat > timeoutMs) {
-            setAgentState(sessionId, AGENT_STATES.TIMEOUT, {
-                reason: `No heartbeat for ${timeSinceHeartbeat}ms`
-            });
-            clearExecutionLock(state.pcId);
-        }
-    }
-}
-
-// Phase 5: Async Execution (Non-Blocking)
+// NEW: /api/run-credentials - Generate PC credentials only
 router.post('/api/run-credentials', (req, res) => {
     const requestStart = process.hrtime.bigint();
     
     try {
-        const { apiKey, timestamp } = req.body;
+        const { apiKey } = req.body;
         
         // Phase 1: Input Validation (Fast Fail)
-        const validation = validateInput(apiKey);
+        const validation = validateAPIKey(apiKey);
         if (!validation.valid) {
             const endTime = process.hrtime.bigint();
             const duration = Number(endTime - requestStart) / 1000000;
@@ -177,36 +94,26 @@ router.post('/api/run-credentials', (req, res) => {
             });
         }
         
-        // Generate unique session ID and PC ID
-        const sessionId = crypto.randomBytes(16).toString('hex');
-        const pcId = `PC-${sessionId.substring(0, 8).toUpperCase()}`;
+        // Generate PC credentials
+        const credentials = generatePCCredentials();
         
-        // Phase 2: Execution Lock
-        const lockCheck = checkExecutionLock(pcId);
-        if (lockCheck.locked) {
-            return res.status(lockCheck.status).json({
-                success: false,
-                error: lockCheck.error,
-                code: lockCheck.code,
-                state: getAgentState(sessionId)
-            });
-        }
-        
-        // Set execution lock
-        setExecutionLock(pcId, sessionId);
-        
-        // Phase 3: State Machine - Set to PREPARING
-        setAgentState(sessionId, AGENT_STATES.PREPARING, {
-            pcId: pcId,
+        // Store PC information
+        registeredPCs.set(credentials.pcId, {
+            pcId: credentials.pcId,
+            authToken: credentials.authToken,
             apiKey: apiKey,
+            createdAt: credentials.createdAt,
             userAgent: req.get('User-Agent') || 'Unknown',
             ipAddress: req.ip || req.connection.remoteAddress || 'Unknown'
         });
         
-        // Phase 4: Timeout Control
-        setupTimeout(sessionId, 10000);
+        // Mark as waiting for agent
+        pcStatus.set(credentials.pcId, {
+            state: PC_STATES.WAITING,
+            lastSeen: new Date().toISOString(),
+            createdAt: credentials.createdAt
+        });
         
-        // Phase 5: Async Execution - Respond immediately
         const endTime = process.hrtime.bigint();
         const totalDuration = Number(endTime - requestStart) / 1000000;
         
@@ -214,40 +121,25 @@ router.post('/api/run-credentials', (req, res) => {
             console.warn(`⚠️ Request took ${totalDuration}ms (should be ≤300ms)`);
         }
         
-        // Store credentials
-        activeCredentials.set(sessionId, {
-            apiKey: apiKey,
-            createdAt: new Date().toISOString(),
-            userAgent: req.get('User-Agent') || 'Unknown',
-            ipAddress: req.ip || req.connection.remoteAddress || 'Unknown',
-            timestamp: Date.now()
-        });
-        
-        // Generate agent code
-        const agentCode = generateAgentCodeWithApiKey(apiKey, sessionId);
-        
-        // Immediate response (≤300ms requirement)
+        // Immediate response with PC credentials
         res.json({
             success: true,
-            sessionId: sessionId,
-            pcId: pcId,
-            agentCode: agentCode,
-            state: AGENT_STATES.PREPARING,
-            message: 'Agent preparation started',
+            pcId: credentials.pcId,
+            authToken: credentials.authToken,
+            serverUrl: credentials.serverUrl,
+            state: PC_STATES.WAITING,
+            message: 'PC credentials generated. Agent must be started manually.',
             duration: totalDuration,
             instructions: {
-                step1: 'Agent is preparing in background',
-                step2: 'Will transition to RUNNING when ready',
-                step3: 'Monitor state via /api/agent-state/:sessionId'
-            }
+                step1: 'Download agent.js to your PC',
+                step2: 'Run: node agent.js ' + credentials.pcId + ' ' + credentials.authToken + ' ' + credentials.serverUrl,
+                step3: 'Agent will connect and show as ONLINE',
+                step4: 'Monitor status in dashboard'
+            },
+            agentCommand: `node agent.js ${credentials.pcId} ${credentials.authToken} ${credentials.serverUrl}`
         });
         
-        // Start async agent execution (non-blocking)
-        setTimeout(() => {
-            executeAgentAsync(sessionId, pcId, agentCode);
-        }, 100);
-        
-        console.log(`🚀 Agent execution started: ${sessionId.substring(0, 8)} (${totalDuration}ms)`);
+        console.log(`🔑 PC credentials generated: ${credentials.pcId} (${totalDuration}ms)`);
         
     } catch (error) {
         console.error('Run credentials error:', error);
@@ -262,350 +154,120 @@ router.post('/api/run-credentials', (req, res) => {
     }
 });
 
-// Async agent execution (non-blocking)
-async function executeAgentAsync(sessionId, pcId, agentCode) {
+// NEW: /api/register-agent - Agent registration
+router.post('/api/register-agent', (req, res) => {
     try {
-        // Simulate agent preparation (in production, this would actually start the agent)
-        setTimeout(() => {
-            recordHeartbeat(sessionId);
-            setAgentState(sessionId, AGENT_STATES.RUNNING, {
-                agentStarted: Date.now()
-            });
-            
-            // Simulate successful execution
-            setTimeout(() => {
-                setAgentState(sessionId, AGENT_STATES.SUCCESS, {
-                    completedAt: Date.now(),
-                    duration: Date.now() - getAgentState(sessionId).agentStarted
-                });
-                clearExecutionLock(pcId);
-            }, 2000);
-        }, 1000);
+        const { pc_id, auth_token, system_info } = req.body;
         
-    } catch (error) {
-        setAgentState(sessionId, AGENT_STATES.FAILED, {
-            error: error.message,
-            failedAt: Date.now()
-        });
-        clearExecutionLock(pcId);
-    }
-}
-
-// Phase 6: Heartbeat endpoint
-router.post('/api/agent-heartbeat/:sessionId', (req, res) => {
-    const { sessionId } = req.params;
-    recordHeartbeat(sessionId);
-    
-    res.json({
-        success: true,
-        state: getAgentState(sessionId),
-        timestamp: Date.now()
-    });
-});
-
-// Phase 7: State query endpoint
-router.get('/api/agent-state/:sessionId', (req, res) => {
-    const { sessionId } = req.params;
-    const state = getAgentState(sessionId);
-    
-    // Check heartbeat timeout
-    checkHeartbeatTimeout(sessionId);
-    
-    res.json({
-        success: true,
-        state: state.state,
-        metadata: state,
-        timestamp: Date.now()
-    });
-});
-
-// Clean up old sessions to prevent memory issues
-function cleanupOldSessions() {
-    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
-    const now = Date.now();
-    
-    for (const [sessionId, credentials] of activeCredentials.entries()) {
-        if (now - new Date(credentials.createdAt).getTime() > oneHour) {
-            activeCredentials.delete(sessionId);
-            console.log(`🧹 Cleaned expired session: ${sessionId.substring(0, 8)}`);
-        }
-    }
-}
-
-// Get credentials for session
-router.get('/api/credentials/:sessionId', (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        
-        const credentials = activeCredentials.get(sessionId);
-        if (!credentials) {
-            return res.status(404).json({
+        // Validate credentials
+        const pc = registeredPCs.get(pc_id);
+        if (!pc || pc.authToken !== auth_token) {
+            return res.status(401).json({
                 success: false,
-                error: 'Session not found or expired'
+                error: 'Invalid pc_id or auth_token',
+                code: 'INVALID_CREDENTIALS'
             });
         }
+        
+        // Update PC status to ONLINE
+        pcStatus.set(pc_id, {
+            state: PC_STATES.ONLINE,
+            lastSeen: new Date().toISOString(),
+            systemInfo: system_info,
+            registeredAt: new Date().toISOString()
+        });
+        
+        console.log(`✅ Agent registered: ${pc_id} from ${system_info?.platform || 'Unknown'}`);
         
         res.json({
             success: true,
-            apiKey: credentials.apiKey,
-            createdAt: credentials.createdAt
+            message: 'Agent registered successfully',
+            pc_id: pc_id,
+            state: PC_STATES.ONLINE
         });
         
     } catch (error) {
-        console.error('Get credentials error:', error);
+        console.error('Agent registration error:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to retrieve credentials'
+            error: 'Registration failed',
+            code: 'REGISTRATION_ERROR'
         });
     }
 });
 
-// Execute agent code (called from generated HTML)
-router.post('/api/execute-agent/:sessionId', (req, res) => {
+// NEW: /api/heartbeat - Real agent heartbeat
+router.post('/api/heartbeat', (req, res) => {
     try {
-        const { sessionId } = req.params;
+        const { pc_id, timestamp, status, system_info, shutdown_reason } = req.body;
         
-        const credentials = activeCredentials.get(sessionId);
-        if (!credentials) {
-            return res.status(404).json({
+        // Validate PC exists
+        const pc = registeredPCs.get(pc_id);
+        if (!pc) {
+            return res.status(401).json({
                 success: false,
-                error: 'Session not found or expired'
+                error: 'Unknown PC ID',
+                code: 'UNKNOWN_PC'
             });
         }
         
-        console.log(`🚀 Executing agent for session: ${sessionId.substring(0, 8)}...`);
-        
-        res.json({
-            success: true,
-            message: 'Agent execution started',
-            apiKey: credentials.apiKey
+        // Update status based on heartbeat
+        const currentState = status || 'ONLINE';
+        pcStatus.set(pc_id, {
+            state: currentState === 'OFFLINE' ? PC_STATES.OFFLINE : PC_STATES.ONLINE,
+            lastSeen: new Date().toISOString(),
+            systemInfo: system_info,
+            shutdownReason: shutdown_reason
         });
         
-    } catch (error) {
-        console.error('Execute agent error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to execute agent'
-        });
-    }
-});
-
-// Clean up old sessions (run every hour)
-setInterval(() => {
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
-    
-    for (const [sessionId, credentials] of activeCredentials.entries()) {
-        if (now - new Date(credentials.createdAt).getTime() > oneHour) {
-            activeCredentials.delete(sessionId);
-            console.log(`🧹 Cleaned expired session: ${sessionId.substring(0, 8)}`);
-        }
-    }
-}, 60 * 60 * 1000); // Run every hour
-
-function generateAgentCodeWithApiKey(apiKey, sessionId) {
-    const websiteUrl = process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com';
-    
-    return `<!DOCTYPE html>
-<html>
-<head>
-    <title>PC Agent - Ready to Run</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px; 
-            background: #1a1a2e; 
-            color: #00ff88; 
-            margin: 0;
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            padding: 20px;
-            background: rgba(0, 255, 136, 0.1); 
-            border-radius: 8px;
-        }
-        .status { 
-            background: rgba(0, 255, 136, 0.1); 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin: 20px 0; 
-            border-left: 3px solid #00ff88;
-        }
-        .code-block { 
-            background: #000; 
-            padding: 20px; 
-            border-radius: 8px; 
-            border: 2px solid #00ff88; 
-            margin: 20px 0; 
-            overflow-x: auto;
-        }
-        .btn { 
-            background: #00ff88; 
-            color: #000; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            margin: 10px 5px; 
-            display: inline-block;
-        }
-        .btn:hover { background: #00cc70; }
-        .btn-secondary { background: #6c757d; }
-        .btn-secondary:hover { background: #5a6268; }
-        .instructions { 
-            background: rgba(0, 255, 136, 0.1); 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin: 20px 0;
-        }
-        pre { 
-            margin: 0; 
-            white-space: pre-wrap; 
-            word-wrap: break-word; 
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 PC Agent - Ready to Run</h1>
-            <p>Your agent is configured and ready to connect to the dashboard</p>
-        </div>
-        
-        <div class="status">
-            <h3>📡 Connection Status</h3>
-            <p><strong>Status:</strong> <span id="connectionStatus">Initializing...</span></p>
-            <p><strong>Last Seen:</strong> <span id="lastSeen">Never</span></p>
-            <p><strong>Dashboard:</strong> ${websiteUrl}</p>
-        </div>
-        
-        <div class="instructions">
-            <h3>📋 Instructions</h3>
-            <ol>
-                <li>Agent will automatically start connecting to dashboard</li>
-                <li>Check your dashboard for PC registration status</li>
-                <li>Connection status will update in real-time</li>
-            </ol>
-        </div>
-        
-        <div class="code-block">
-            <h3>🔧 Debug Information</h3>
-            <p><strong>Session ID:</strong> <span id="sessionId">${sessionId}</span></p>
-            <p><strong>API Key:</strong> ${apiKey.substring(0, 10)}...</p>
-        </div>
-    </div>
-
-    <script src="${websiteUrl}/agent.js"></script>
-    <script>
-        // Auto-start with credentials
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session') || localStorage.getItem('session');
-        
-        if (sessionId) {
-            // Get credentials from server
-            fetch('${websiteUrl}/api/credentials/' + sessionId)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('✅ Credentials loaded, starting agent...');
-                        
-                        // Update UI
-                        document.getElementById('sessionId').textContent = sessionId;
-                        document.getElementById('connectionStatus').textContent = 'Connecting...';
-                        
-                        // Start agent with loaded credentials
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const pcId = urlParams.get('pc_id') || localStorage.getItem('pc_id');
-                        const authToken = urlParams.get('auth_token') || localStorage.getItem('auth_token');
-                        
-                        if (pcId && authToken) {
-                            const agent = new PCAgent(pcId, authToken, '${websiteUrl}');
-                            agent.start();
-                        } else {
-                            document.getElementById('connectionStatus').textContent = 'Waiting for PC credentials...';
-                        }
-                    } else {
-                        console.error('❌ Failed to load credentials');
-                        document.getElementById('connectionStatus').textContent = 'Failed to load credentials';
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Error loading credentials:', error);
-                    document.getElementById('connectionStatus').textContent = 'Error loading credentials';
-                });
+        if (currentState === 'OFFLINE') {
+            console.log(`🔴 Agent went offline: ${pc_id} (${shutdown_reason || 'Unknown reason'})`);
         } else {
-            console.log('⚠️ No session ID found');
-            document.getElementById('connectionStatus').textContent = 'No session found';
+            console.log(`💓 Heartbeat received: ${pc_id}`);
         }
         
-        // Update connection status periodically
-        setInterval(() => {
-            const pcId = urlParams.get('pc_id') || localStorage.getItem('pc_id');
-            const authToken = urlParams.get('auth_token') || localStorage.getItem('auth_token');
-            
-            if (pcId && authToken) {
-                // Check if agent is connected by trying to register again
-                fetch('${websiteUrl}/api/register-agent', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pc_id: pcId,
-                        auth_token: authToken,
-                        hostname: 'Browser Agent',
-                        OS: navigator.platform || 'Unknown',
-                        local_ip: 'Browser'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('connectionStatus').textContent = 'ONLINE';
-                        document.getElementById('lastSeen').textContent = 'Just now';
-                    } else {
-                        document.getElementById('connectionStatus').textContent = 'OFFLINE';
-                        document.getElementById('lastSeen').textContent = 'Connection failed';
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Status check error:', error);
-                });
-            }
-        }, 5000); // Check every 5 seconds
-    </script>
-</body>
-</html>`;
-}
+        res.json({
+            success: true,
+            message: 'Heartbeat received',
+            pc_id: pc_id,
+            state: currentState
+        });
+        
+    } catch (error) {
+        console.error('Heartbeat error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Heartbeat processing failed',
+            code: 'HEARTBEAT_ERROR'
+        });
+    }
+});
 
-// Get registered PCs list
+// NEW: /api/registered-pcs - Get all PC statuses
 router.get('/api/registered-pcs', (req, res) => {
     try {
-        // In a real implementation, this would query a database
-        // For now, return a mock response that can be enhanced
-        const mockPCs = [
-            {
-                pcId: 'PC-001',
-                pcName: 'Main Desktop',
+        const pcs = [];
+        
+        for (const [pcId, pcInfo] of registeredPCs.entries()) {
+            const status = pcStatus.get(pcId) || { state: PC_STATES.OFFLINE };
+            
+            pcs.push({
+                pcId: pcId,
+                pcName: `PC-${pcId.split('-')[1]}`,
                 owner: 'User',
-                pcType: 'Desktop',
-                location: 'Office',
-                status: 'ONLINE',
-                lastSeen: new Date().toISOString(),
-                registeredAt: new Date().toISOString()
-            }
-        ];
+                pcType: status.systemInfo?.platform || 'Unknown',
+                location: 'Local',
+                status: status.state,
+                lastSeen: status.lastSeen,
+                registeredAt: pcInfo.createdAt,
+                systemInfo: status.systemInfo
+            });
+        }
         
         res.json({
             success: true,
-            pcs: mockPCs,
-            totalPCs: mockPCs.length
+            pcs: pcs,
+            totalPCs: pcs.length
         });
         
     } catch (error) {
@@ -617,19 +279,27 @@ router.get('/api/registered-pcs', (req, res) => {
     }
 });
 
-// Delete PC endpoint
+// NEW: /api/pc/:pcId - Delete PC
 router.delete('/api/pc/:pcId', (req, res) => {
     try {
         const { pcId } = req.params;
         
-        console.log(`🗑️ Deleting PC: ${pcId}`);
-        
-        // In a real implementation, this would delete from database
-        // For now, return success response
-        res.json({
-            success: true,
-            message: `PC ${pcId} deleted successfully`
-        });
+        if (registeredPCs.has(pcId)) {
+            registeredPCs.delete(pcId);
+            pcStatus.delete(pcId);
+            
+            console.log(`🗑️ PC deleted: ${pcId}`);
+            
+            res.json({
+                success: true,
+                message: `PC ${pcId} deleted successfully`
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                error: `PC ${pcId} not found`
+            });
+        }
         
     } catch (error) {
         console.error('Failed to delete PC:', error);
@@ -639,5 +309,26 @@ router.delete('/api/pc/:pcId', (req, res) => {
         });
     }
 });
+
+// Cleanup offline PCs (no heartbeat for 10 seconds)
+function cleanupOfflinePCs() {
+    const now = Date.now();
+    
+    for (const [pcId, status] of pcStatus.entries()) {
+        const lastSeen = new Date(status.lastSeen).getTime();
+        if (now - lastSeen > 10000 && status.state === PC_STATES.ONLINE) {
+            pcStatus.set(pcId, {
+                ...status,
+                state: PC_STATES.OFFLINE,
+                lastSeen: new Date().toISOString(),
+                shutdownReason: 'Heartbeat timeout'
+            });
+            console.log(`⏰ PC marked offline due to timeout: ${pcId}`);
+        }
+    }
+}
+
+// Run cleanup every 5 seconds
+setInterval(cleanupOfflinePCs, 5000);
 
 module.exports = router;

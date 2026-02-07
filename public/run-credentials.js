@@ -1,7 +1,4 @@
-// Run Credentials functionality - State-driven agent execution
-let currentAgentSession = null;
-let stateCheckInterval = null;
-
+// Real Agent Management - Generate PC credentials and show instructions
 async function runCredentials() {
     // Always get the latest API key from input
     const apiKey = document.getElementById('apiKey').value.trim();
@@ -22,14 +19,13 @@ async function runCredentials() {
     const originalText = runBtn ? runBtn.innerHTML : '';
     
     try {
-        // Phase 8: Disable button immediately
+        // Disable button immediately
         if (runBtn) {
             runBtn.disabled = true;
-            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validating...';
+            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PC...';
         }
         
-        // Phase 5: Async execution - immediate response expected
-        showNotification('success', '🚀 Starting Agent', 'Initializing agent execution...');
+        showNotification('success', '� Generating PC', 'Creating PC credentials...');
         
         const response = await fetch('/api/run-credentials', {
             method: 'POST',
@@ -46,32 +42,24 @@ async function runCredentials() {
         const data = await response.json();
         
         if (data.success) {
-            // Store session for state monitoring
-            currentAgentSession = data.sessionId;
-            
-            // Update UI based on state
-            updateUIForState(data.state, data);
-            
-            // Start state monitoring
-            startStateMonitoring(data.sessionId);
+            // Show PC credentials and instructions
+            showPCInstructions(data);
             
             if (runBtn) {
-                runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Preparing...';
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<i class="fas fa-check"></i> PC Ready';
             }
             
-            // Open agent execution window
-            const agentWindow = window.open(
-                `${window.location.origin}/agent-executor.html?session=${data.sessionId}`,
-                '_blank',
-                'width=1000,height=800,scrollbars=yes,resizable=yes,location=yes,menubar=no'
-            );
-            
-            if (!agentWindow || agentWindow.closed || typeof agentWindow.closed === 'undefined') {
-                showNotification('warning', '⚠️ Popup Blocked', 'Please allow popups for this site to open the agent window');
-            }
+            // Auto-switch to Registered PCs tab after 2 seconds
+            setTimeout(() => {
+                const registeredPcsTab = document.querySelector('button[onclick*="registered-pcs"]');
+                if (registeredPcsTab) {
+                    registeredPcsTab.click();
+                    showNotification('success', '📊 Monitor PC', 'Switched to Registered PCs tab to monitor your agent');
+                }
+            }, 2000);
             
         } else {
-            // Handle specific error codes
             handleExecutionError(data, runBtn, originalText);
         }
         
@@ -81,7 +69,23 @@ async function runCredentials() {
     }
 }
 
-// Phase 8: Handle execution errors
+// Show PC instructions to user
+function showPCInstructions(data) {
+    showNotification('success', '✅ PC Created', `PC ID: ${data.pcId} - Ready for agent setup`);
+    
+    // Update UI with PC information
+    updateRunCredentialsUI(data);
+    
+    // Copy command to clipboard
+    const command = data.agentCommand;
+    navigator.clipboard.writeText(command).then(() => {
+        showNotification('success', '📋 Command Copied', 'Agent command copied to clipboard');
+    }).catch(() => {
+        console.log('Could not copy to clipboard');
+    });
+}
+
+// Handle execution errors
 function handleExecutionError(data, runBtn, originalText) {
     let errorMessage = data.error || 'Unknown error occurred';
     let errorType = 'error';
@@ -92,15 +96,11 @@ function handleExecutionError(data, runBtn, originalText) {
         case 'STALE_API_KEY':
             errorType = 'error';
             break;
-        case 'AGENT_ALREADY_RUNNING':
-            errorType = 'warning';
-            showNotification('warning', '⚠️ Agent Already Running', 'Please wait for current agent to complete');
-            break;
         default:
             errorType = 'error';
     }
     
-    showNotification(errorType, '❌ Execution Failed', errorMessage);
+    showNotification(errorType, '❌ PC Creation Failed', errorMessage);
     
     if (runBtn) {
         runBtn.disabled = false;
@@ -108,9 +108,9 @@ function handleExecutionError(data, runBtn, originalText) {
     }
 }
 
-// Phase 8: Handle network errors
+// Handle network errors
 function handleNetworkError(error, runBtn, originalText) {
-    let errorMessage = 'Failed to start agent';
+    let errorMessage = 'Failed to create PC';
     let errorType = 'error';
     
     if (error.name === 'AbortError') {
@@ -131,98 +131,9 @@ function handleNetworkError(error, runBtn, originalText) {
     }
 }
 
-// Phase 8: Update UI based on agent state
-function updateUIForState(state, data) {
-    const runBtn = document.querySelector('button[onclick="runCredentials()"]');
-    
-    switch (state) {
-        case 'PREPARING':
-            if (runBtn) {
-                runBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Preparing...';
-            }
-            showNotification('success', '⚙️ Agent Preparing', 'Agent is initializing...');
-            break;
-            
-        case 'RUNNING':
-            if (runBtn) {
-                runBtn.innerHTML = '<i class="fas fa-play"></i> Running';
-            }
-            showNotification('success', '🚀 Agent Running', `Agent ${data.pcId} is now running`);
-            break;
-            
-        case 'SUCCESS':
-            if (runBtn) {
-                runBtn.disabled = false;
-                runBtn.innerHTML = '<i class="fas fa-check"></i> Success';
-            }
-            showNotification('success', '✅ Agent Complete', `Agent ${data.pcId} completed successfully`);
-            
-            // Auto-switch to Registered PCs tab after 2 seconds
-            setTimeout(() => {
-                const registeredPcsTab = document.querySelector('button[onclick*="registered-pcs"]');
-                if (registeredPcsTab) {
-                    registeredPcsTab.click();
-                    showNotification('success', '📊 Monitoring', 'Switched to Registered PCs tab to monitor your agent');
-                }
-            }, 2000);
-            break;
-            
-        case 'FAILED':
-        case 'TIMEOUT':
-            if (runBtn) {
-                runBtn.disabled = false;
-                runBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
-            }
-            showNotification('error', '❌ Agent Failed', `Agent ${data.pcId} ${state.toLowerCase()}`);
-            break;
-    }
-}
-
-// Phase 8: Start state monitoring
-function startStateMonitoring(sessionId) {
-    // Clear existing interval
-    if (stateCheckInterval) {
-        clearInterval(stateCheckInterval);
-    }
-    
-    // Check state every 2 seconds
-    stateCheckInterval = setInterval(async () => {
-        try {
-            const response = await fetch(`/api/agent-state/${sessionId}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                updateUIForState(data.state, data.metadata);
-                
-                // Stop monitoring if terminal state reached
-                if (data.state === 'SUCCESS' || data.state === 'FAILED' || data.state === 'TIMEOUT') {
-                    clearInterval(stateCheckInterval);
-                    currentAgentSession = null;
-                }
-            }
-        } catch (error) {
-            console.error('State check error:', error);
-        }
-    }, 2000);
-}
-
-// Clear existing sessions to ensure fresh start
-function clearExistingSessions() {
-    localStorage.removeItem('agentSession');
-    localStorage.removeItem('lastApiKey');
-    localStorage.removeItem('pcId');
-    localStorage.removeItem('authToken');
-    
-    // Stop state monitoring
-    if (stateCheckInterval) {
-        clearInterval(stateCheckInterval);
-        stateCheckInterval = null;
-    }
-    currentAgentSession = null;
-}
-
-function updateRunCredentialsUI(sessionId, apiKey, autoPcId) {
-    // Update API Keys tab to show session info
+// Update UI with PC information
+function updateRunCredentialsUI(data) {
+    // Update API Keys tab to show PC info
     const apiStatus = document.getElementById('apiStatus');
     const apiStatusText = document.getElementById('apiStatusText');
     
@@ -230,41 +141,35 @@ function updateRunCredentialsUI(sessionId, apiKey, autoPcId) {
         apiStatus.className = 'api-status status-configured';
         apiStatusText.innerHTML = `
             <div style="margin-bottom: 10px;">
-                <strong>✅ Agent Session Active</strong><br>
-                <span style="color: #00ff88;">Session ID: ${sessionId.substring(0, 8)}...</span><br>
-                <span style="color: #00ff88;">PC ID: ${autoPcId || 'Generated'}</span>
+                <strong>✅ PC Created Successfully</strong><br>
+                <span style="color: #00ff88;">PC ID: ${data.pcId}</span><br>
+                <span style="color: #00ff88;">Status: ${data.state}</span>
             </div>
             <div style="margin-bottom: 10px;">
-                <strong>🚀 Agent Status:</strong> 
-                <span style="color: #28a745;">Running in separate window</span>
+                <strong>🚀 Next Steps:</strong> 
+                <span style="color: #28a745;">Run agent on your PC</span>
             </div>
             <div style="padding: 10px; background: rgba(0, 255, 136, 0.1); border-radius: 4px; border-left: 3px solid #00ff88;">
-                <strong>📋 Instructions:</strong>
-                <ol style="margin: 0; padding-left: 20px; color: rgba(255, 255, 255, 0.8);">
-                    <li>Agent is running in separate window</li>
-                    <li>Connection status updates automatically</li>
-                    <li>Check dashboard for PC registration</li>
-                    <li>Close window when done</li>
+                <strong>📋 Agent Command:</strong>
+                <div style="margin: 5px 0; padding: 8px; background: rgba(0, 0, 0, 0.3); border-radius: 4px; font-family: monospace; font-size: 0.9rem;">
+                    ${data.agentCommand}
+                </div>
+                <ol style="margin: 10px 0; padding-left: 20px; color: rgba(255, 255, 255, 0.8);">
+                    <li>Download agent.js to your PC</li>
+                    <li>Run the command above in terminal</li>
+                    <li>Agent will connect automatically</li>
+                    <li>Monitor status in dashboard</li>
                 </ol>
             </div>
         `;
     }
 }
 
-// Auto-update session status
-function checkAgentSessionStatus(sessionId) {
-    fetch(`${window.location.origin}/api/credentials/${sessionId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const age = Math.floor((Date.now() - new Date(data.createdAt).getTime()) / (1000 * 60));
-                const statusElement = document.getElementById('sessionStatus');
-                if (statusElement) {
-                    statusElement.textContent = `Active (${age}m old)`;
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Session status check error:', error);
-        });
+// Clear existing sessions
+function clearExistingSessions() {
+    localStorage.removeItem('agentSession');
+    localStorage.removeItem('lastApiKey');
+    localStorage.removeItem('pcId');
+    localStorage.removeItem('authToken');
 }
+
