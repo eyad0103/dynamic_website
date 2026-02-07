@@ -1,0 +1,126 @@
+<!-- API Keys Tab - ONLY manages API keys -->
+                <div id="api-tab" class="tab-content">
+                    <div class="api-status" id="apiStatus">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="apiStatusText">Ready to manage API key</span>
+                    </div>
+                    
+                    <!-- API Key Management Only -->
+                    <div style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05)); border: 2px solid #00ff88; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: #00ff88; text-align: center; margin-bottom: 1rem;">
+                            🔑 API Key Management
+                        </h3>
+                        <p style="color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
+                            Save your OpenRouter API key for persistent use across sessions
+                        </p>
+                        
+                        <form class="api-key-form" id="apiKeyForm">
+                            <div class="form-group">
+                                <label class="form-label" for="apiKey" style="font-size: 1.1rem; font-weight: bold;">
+                                    🔑 Your OpenRouter API Key
+                                </label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); saveApiKey(); }">
+                                    <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                </div>
+                                <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on the server</small>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <button type="button" class="form-button" onclick="saveApiKey()" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
+                                    <i class="fas fa-save"></i> 💾 Save API Key
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">📋 Instructions</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
+                            <strong>🔑 API Key Tab:</strong> Only manages your OpenRouter API key<br>
+                            <strong>🖥️ Create PC Tab:</strong> Create PCs and connect agents<br>
+                            <strong>📊 Registered PCs Tab:</strong> Monitor PC status in real-time<br><br>
+                            <small style="color: rgba(0, 255, 136, 0.7);">✨ All tabs work together seamlessly</small>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Create PC Tab - Handles PC creation AND agent connection -->
+                <div id="pcs-tab" class="tab-content">
+                    <div class="error-list">
+                        <div class="error-list-header">
+                            <div class="error-list-title">PC Management</div>
+                            <div class="error-filters">
+                                <button id="refreshPcsBtn" class="refresh-btn">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div style="padding: 1rem;">
+                            <!-- Create New PC Section -->
+                            <div style="margin-bottom: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;">🖥️ Create New PC</h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <input type="text" id="pcName" class="form-input" placeholder="PC Name (e.g., Office-PC, Laptop-01)">
+                                    <input type="text" id="pcLocation" class="form-input" placeholder="Location (e.g., Office, Home)">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <input type="text" id="pcOwner" class="form-input" placeholder="Owner Name">
+                                    <select id="pcType" class="form-input">
+                                        <option value="">Select PC Type</option>
+                                        <option value="desktop">Desktop</option>
+                                        <option value="laptop">Laptop</option>
+                                        <option value="server">Server</option>
+                                        <option value="workstation">Workstation</option>
+                                    </select>
+                                </div>
+                                <div style="margin-bottom: 1rem;">
+                                    <textarea id="pcDescription" class="form-input" placeholder="Description (optional)" rows="3"></textarea>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <button id="createPcBtn" class="form-button" onclick="createPC()">
+                                        <i class="fas fa-plus"></i> CREATE PC
+                                    </button>
+                                    <button id="connectAgentBtn" class="form-button" onclick="connectAgent()" style="background: #007bff;">
+                                        <i class="fas fa-link"></i> CONNECT AGENT
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- PC Status Overview -->
+                            <div id="pcStatusOverview" style="margin-bottom: 2rem;">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;">📊 PC Status Overview</h4>
+                                <div id="pcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                                    <!-- PC status cards will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <!-- PC List -->
+                            <div id="pcList">
+                                <h4 style="color: #00ff88; margin-bottom: 1rem;">🖥️ Registered PCs</h4>
+                                <div id="pcTable" style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="background: rgba(0, 255, 136, 0.1);">
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">PC Name</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Status</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Last Heartbeat</th>
+                                                <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Location</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pcTableBody">
+                                            <!-- PC rows will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
