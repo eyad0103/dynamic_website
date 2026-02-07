@@ -163,7 +163,7 @@ function displayPCs(pcs) {
 
 function refreshPC(pcId) {
     // Refresh specific PC status
-    showNotification('info', 'Refreshing PC', `Updating status for ${pcId}...`);
+    showNotification('success', 'Refreshing PC', `Updating status for ${pcId}...`);
     loadPcList();
 }
 

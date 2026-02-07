@@ -23,7 +23,7 @@ async function runCredentials() {
     
     try {
         // Immediate UI feedback
-        showNotification('info', '🚀 Starting Agent', 'Connecting to server...');
+        showNotification('success', '🚀 Starting Agent', 'Connecting to server...');
         
         if (runBtn) {
             runBtn.disabled = true;
@@ -82,7 +82,7 @@ async function runCredentials() {
                 const registeredPcsTab = document.querySelector('button[onclick*="registered-pcs"]');
                 if (registeredPcsTab) {
                     registeredPcsTab.click();
-                    showNotification('info', '📊 Monitoring', 'Switched to Registered PCs tab to monitor your agent');
+                    showNotification('success', '📊 Monitoring', 'Switched to Registered PCs tab to monitor your agent');
                 }
             }, 2000);
             
