@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic PC Management System - Debug Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a4858);
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00ff88, #00cc70);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: #00ff88;
+            letter-spacing: 2px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Navigation */
+        .nav-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-bottom: 2px solid #00ff88;
+        }
+
+        /* Tab Container */
+        .tab-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-header {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+            padding-bottom: 1rem;
+        }
+
+        .tab-button {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .tab-button:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-bottom: 2px solid #00ff88;
+        }
+
+        .tab-content {
+            display: none;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form Styles */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.3);
+        }
+
+        .form-button {
+            background: linear-gradient(135deg, #00ff88, #00cc70);
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .form-button:hover {
+            background: linear-gradient(135deg, #00cc70, #00aa55);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+        }
+
+        .form-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* API Status */
+        .api-status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .api-status.status-configured {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+        }
+
+        .api-status.status-not-configured {
+            background: rgba(255, 71, 87, 0.2);
+            border: 1px solid #ff4757;
+            color: #ff4757;
+        }
+
+        .api-status.status-testing {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #ffc107;
+            color: #ffc107;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            animation: slideIn 0.3s ease;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .notification-success {
+            background: linear-gradient(135deg, #00ff88, #00cc70);
+            border-color: #00cc70;
+            color: #000;
+        }
+
+        .notification-error {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            border-color: #ff3838;
+            color: #fff;
+        }
+
+        .notification-warning {
+            background: linear-gradient(135deg, #ffa502, #ff8c00);
+            border-color: #ff8c00;
+            color: #000;
+        }
+
+        .notification-info {
+            background: linear-gradient(135deg, #3742fa, #2f3542);
+            border-color: #3742fa;
+            color: #fff;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-title {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .notification-close:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .notification-body {
+            padding: 1rem;
+            line-height: 1.4;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Table Styles */
+        .pc-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .pc-table th,
+        .pc-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .pc-table th {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .pc-table tr:hover {
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        /* Status Cards */
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-card {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .status-card h4 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .status-card .count {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-card .label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+            z-index: 999;
+        }
+
+        .debug-panel h4 {
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+        }
+
+        .debug-log {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.2;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .tab-header {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .tab-button {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .status-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .pc-table {
+                font-size: 0.8rem;
+            }
+
+            .pc-table th,
+            .pc-table td {
+                padding: 0.5rem;
+            }
+
+            .debug-panel {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                margin: 1rem 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="dashboard-title">Dynamic PC Management</h1>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>System Online</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-container">
+            <div class="nav-links">
+                <a href="#api" class="nav-link active" onclick="switchTab('api', event)">
+                    <i class="fas fa-key"></i> API Keys
+                </a>
+                <a href="#pcs" class="nav-link" onclick="switchTab('pcs', event)">
+                    <i class="fas fa-desktop"></i> Create PC
+                </a>
+                <a href="#registered-pcs" class="nav-link" onclick="switchTab('registered-pcs', event)">
+                    <i class="fas fa-list"></i> Registered PCs
+                </a>
+            </div>
+        </nav>
+
+        <!-- Tab Container -->
+        <div class="tab-container">
+            <div class="tab-header">
+                <button class="tab-button active" onclick="switchTab('api', event)">
+                    <i class="fas fa-key"></i> API Keys
+                </button>
+                <button class="tab-button" onclick="switchTab('pcs', event)">
+                    <i class="fas fa-desktop"></i> Create PC
+                </button>
+                <button class="tab-button" onclick="switchTab('registered-pcs', event)">
+                    <i class="fas fa-list"></i> Registered PCs
+                </button>
+            </div>
+
+            <!-- API Keys Tab -->
+            <div id="api-tab" class="tab-content active">
+                <div class="api-status" id="apiStatus">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="apiStatusText">Ready to manage API key</span>
+                </div>
+                
+                <!-- API Key Management Only -->
+                <div style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05)); border: 2px solid #00ff88; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
+                    <h3 style="color: #00ff88; text-align: center; margin-bottom: 1rem;">
+                        🔑 API Key Management
+                    </h3>
+                    <p style="color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
+                        Save your OpenRouter API key for persistent use across sessions
+                    </p>
+                    
+                    <form class="api-key-form" id="apiKeyForm">
+                        <div style="margin-bottom: 1rem;">
+                            <label class="form-label" for="apiKey" style="font-size: 1.1rem; font-weight: bold; display: block; margin-bottom: 0.5rem;">
+                                🔑 Your OpenRouter API Key
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); saveApiKey(); }">
+                                <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on server</small>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <button type="button" class="form-button" onclick="saveApiKey()" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
+                                <i class="fas fa-save"></i> 💾 Save API Key
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Instructions -->
+                <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                    <h4 style="color: #00ff88; margin-bottom: 0.5rem;">📋 Instructions</h4>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
+                        <strong>🔑 API Key Tab:</strong> Only manages your OpenRouter API key<br>
+                        <strong>🖥️ Create PC Tab:</strong> Create PCs and connect agents<br>
+                        <strong>📊 Registered PCs Tab:</strong> Monitor PC status in real-time<br><br>
+                        <small style="color: rgba(0, 255, 136, 0.7);">✨ All tabs work together seamlessly</small>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Create PC Tab -->
+            <div id="pcs-tab" class="tab-content">
+                <div style="background: rgba(0, 0, 0, 0.1); border-radius: 8px; padding: 2rem;">
+                    <h3 style="color: #00ff88; text-align: center; margin-bottom: 1.5rem;">
+                        🖥️ PC Management
+                    </h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label class="form-label" for="pcName" style="display: block; margin-bottom: 0.5rem;">PC Name</label>
+                            <input type="text" id="pcName" class="form-input" placeholder="Office-PC, Laptop-01">
+                        </div>
+                        <div>
+                            <label class="form-label" for="pcLocation" style="display: block; margin-bottom: 0.5rem;">Location</label>
+                            <input type="text" id="pcLocation" class="form-input" placeholder="Office, Home">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label class="form-label" for="pcOwner" style="display: block; margin-bottom: 0.5rem;">Owner</label>
+                            <input type="text" id="pcOwner" class="form-input" placeholder="Your Name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="pcType" style="display: block; margin-bottom: 0.5rem;">PC Type</label>
+                            <select id="pcType" class="form-input">
+                                <option value="">Select Type</option>
+                                <option value="desktop">Desktop</option>
+                                <option value="laptop">Laptop</option>
+                                <option value="server">Server</option>
+                                <option value="workstation">Workstation</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="form-label" for="pcDescription" style="display: block; margin-bottom: 0.5rem;">Description (Optional)</label>
+                        <textarea id="pcDescription" class="form-input" placeholder="Additional details..." rows="3" style="resize: vertical;"></textarea>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <button id="createPcBtn" class="form-button" onclick="createPC()">
+                            <i class="fas fa-plus"></i> CREATE PC
+                        </button>
+                        <button id="connectAgentBtn" class="form-button" onclick="connectAgent()" style="background: #007bff;">
+                            <i class="fas fa-link"></i> CONNECT AGENT
+                        </button>
+                    </div>
+                    
+                    <!-- Instructions will appear here -->
+                    <div id="pcInstructions" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Registered PCs Tab -->
+            <div id="registered-pcs-tab" class="tab-content">
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="color: #00ff88; margin: 0;">📊 Registered PCs</h3>
+                        <button class="form-button" onclick="fetchRegisteredPCs()" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- PC Status Cards -->
+                <div id="pcStatusCards" class="status-cards">
+                    <div class="status-card">
+                        <h4 style="color: #00ff88;">🟢 Online</h4>
+                        <div class="count" id="onlineCount">0</div>
+                        <div class="label">Active PCs</div>
+                    </div>
+                    <div class="status-card">
+                        <h4 style="color: #ff4757;">🔴 Offline</h4>
+                        <div class="count" id="offlineCount">0</div>
+                        <div class="label">Inactive PCs</div>
+                    </div>
+                    <div class="status-card">
+                        <h4 style="color: #ffc107;">🟡 Waiting</h4>
+                        <div class="count" id="waitingCount">0</div>
+                        <div class="label">Pending Agents</div>
+                    </div>
+                    <div class="status-card">
+                        <h4 style="color: #6c757d;">📊 Total</h4>
+                        <div class="count" id="totalCount">0</div>
+                        <div class="label">All PCs</div>
+                    </div>
+                </div>
+                
+                <!-- PC Table -->
+                <div id="pcList">
+                    <h3 style="color: #00ff88; margin-bottom: 1rem;">🖥️ PC List</h3>
+                    <div class="pc-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>PC Name</th>
+                                    <th>Status</th>
+                                    <th>Last Heartbeat</th>
+                                    <th>Location</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pcTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);">
+                                        No PCs registered yet. Create your first PC to get started.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Container -->
+        <div class="notification-container" id="notificationContainer"></div>
+        
+        <!-- Debug Panel -->
+        <div class="debug-panel">
+            <h4>🐛 Debug Logs</h4>
+            <div class="debug-log" id="debugLogs">
+                <div>Loading debug logs...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/debug-frontend.js"></script>
+    <script>
+        // Update debug panel
+        setInterval(() => {
+            const logs = JSON.parse(localStorage.getItem('debugLogs') || '[]');
+            const debugDiv = document.getElementById('debugLogs');
+            if (debugDiv && logs.length > 0) {
+                const recentLogs = logs.slice(-5).reverse(); // Show last 5 logs
+                debugDiv.innerHTML = recentLogs.map(log => 
+                    `<div style="margin-bottom: 0.5rem;">
+                        <small style="color: rgba(255,255,255,0.6);">${new Date(log.timestamp).toLocaleTimeString()}</small>
+                        <div>${log.message}</div>
+                    </div>`
+                ).join('');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
