@@ -21,7 +21,7 @@ function showNotification(type, title, message) {
     
     // Calculate vertical position based on existing notifications
     const existingNotifications = document.querySelectorAll('.notification');
-    const topOffset = 20 + (existingNotifications.length * 80); // 80px spacing per notification
+    const topOffset = 20 + (existingNotifications.length * 120); // 120px spacing per notification for clear separation
     notification.style.top = `${topOffset}px`;
     
     notification.innerHTML = `
@@ -76,7 +76,7 @@ function removeNotification(closeButton) {
 function repositionNotifications() {
     const notifications = document.querySelectorAll('.notification');
     notifications.forEach((notification, index) => {
-        const topOffset = 20 + (index * 80);
+        const topOffset = 20 + (index * 120); // 120px spacing for clear separation
         notification.style.top = `${topOffset}px`;
     });
 }
