@@ -5,10 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Error Analysis Dashboard</title>
     <meta name="description" content="AI-powered app error analysis and monitoring dashboard">
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==">
     <link rel="stylesheet" href="/css/style.css?v=1.0.1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Error Dashboard Styles */
+        /* PC List Styles */
+        .pc-list {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .pc-item {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .pc-item:hover {
+            border-color: rgba(0, 255, 136, 0.5);
+            background: rgba(0, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .pc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .pc-info h4 {
+            margin: 0;
+            color: #00ff88;
+            font-size: 1.2rem;
+        }
+        
+        .pc-location {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+        
+        .pc-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-online {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        .status-offline {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .pc-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .pc-detail {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
+        .pc-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #00ff88;
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            background: #00cc70;
+        }
+        
+        .btn-danger {
+            background: #ff6b6b;
+            color: #fff;
+        }
+        
+        .btn-danger:hover {
+            background: #ff5252;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .notification-success {
+            background: linear-gradient(135deg, #00ff88, #00cc70);
+            color: #000;
+        }
+        
+        .notification-error {
+            background: linear-gradient(135deg, #ff6b6b, #ff5252);
+            color: #fff;
+        }
+        
+        .notification-warning {
+            background: linear-gradient(135deg, #ffa726, #ff9800);
+            color: #000;
+        }
+        
+        .notification-info {
+            background: linear-gradient(135deg, #42a5f5, #2196f3);
+            color: #fff;
+        }
+        
+        .notification-content {
+            padding: 1rem;
+        }
+        
+        .notification-content h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+        }
+        
+        .notification-content p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .notification-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        
+        .notification-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
         .dashboard-container {
             min-height: 100vh;
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
@@ -1582,33 +1753,41 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                 <!-- Registered PCs Tab -->
                 <div id="registered-pcs-tab" class="tab-content">
                     <div style="margin-bottom: 2rem;">
-                        <h4 style="color: #00ff88; margin-bottom: 1rem;"><span class="green-bold">Registered PCs</span></h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="color: #00ff88; margin: 0;"><span class="green-bold">🖥️ Registered PCs</span></h4>
+                            <button class="form-button" onclick="refreshPcList()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
                         <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 1rem;">
-                            All PCs that have been registered and are actively reporting to your dashboard. Click on any PC to view detailed information and error history.
+                            All PCs that have been registered and are actively reporting to your dashboard. Use the "Run Credentials" button to add new PCs automatically.
                         </p>
                     </div>
                     
-                    <!-- PC Status Overview -->
-                    <div id="pcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                    <!-- PC Status Overview Cards -->
+                    <div id="pcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
                         <!-- PC status cards will be populated here -->
                     </div>
                     
-                    <!-- PC Table -->
-                    <div style="margin-top: 2rem;">
-                        <table style="width: 100%; border-collapse: collapse; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
-                            <thead>
-                                <tr style="background: rgba(0, 255, 136, 0.1);">
-                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">PC Name</th>
-                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Status</th>
-                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Error Count</th>
-                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Last Report</th>
-                                    <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="registeredPcTableBody">
-                                <!-- Registered PC rows will be populated here -->
-                            </tbody>
-                        </table>
+                    <!-- PC List Container -->
+                    <div id="registeredPcsContainer" style="min-height: 400px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 1rem; border: 1px solid rgba(0, 255, 136, 0.2);">
+                        <!-- PC list will be populated here by JavaScript -->
+                        <div style="text-align: center; padding: 3rem; color: rgba(255, 255, 255, 0.6);">
+                            <i class="fas fa-desktop" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <h3>Loading PCs...</h3>
+                            <p>Fetching registered PCs from server</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.1); border-radius: 8px; border-left: 3px solid #00ff88;">
+                        <h5 style="color: #00ff88; margin-bottom: 0.5rem;">💡 Quick Actions</h5>
+                        <ul style="margin: 0; padding-left: 20px; color: rgba(255, 255, 255, 0.8);">
+                            <li>Go to <strong>API Keys</strong> tab and click "🚀 Run Agent Now" to add new PCs</li>
+                            <li>Click the <strong>Refresh</strong> button to update PC status</li>
+                            <li>Click on any PC card to view detailed information and actions</li>
+                        </ul>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -2989,7 +3168,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         loadPcList();
     });
     </script>
-    <script src="/dashboard-additions.js"></script>
+    <script src="/dashboard-additions-new.js"></script>
     <script src="/run-credentials.js"></script>
 </body>
 </html>

@@ -13,7 +13,8 @@ router.post('/api/run-credentials', (req, res) => {
         if (!apiKey) {
             return res.status(400).json({
                 success: false,
-                error: 'API key is required'
+                error: 'API key is required',
+                code: 'MISSING_API_KEY'
             });
         }
         
@@ -21,7 +22,8 @@ router.post('/api/run-credentials', (req, res) => {
         if (!apiKey.startsWith('sk-or-v1-')) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid API key format'
+                error: 'Invalid API key format. Must start with sk-or-v1-',
+                code: 'INVALID_API_KEY_FORMAT'
             });
         }
         
@@ -32,26 +34,43 @@ router.post('/api/run-credentials', (req, res) => {
         activeCredentials.set(sessionId, {
             apiKey: apiKey,
             createdAt: new Date().toISOString(),
-            userAgent: req.get('User-Agent') || 'Unknown'
+            userAgent: req.get('User-Agent') || 'Unknown',
+            ipAddress: req.ip || req.connection.remoteAddress || 'Unknown'
         });
         
         console.log(`🔑 Credentials stored for session: ${sessionId.substring(0, 8)}...`);
         
         // Generate agent code with this API key
-        const agentCode = generateAgentCodeWithApiKey(apiKey);
+        const agentCode = generateAgentCodeWithApiKey(apiKey, sessionId);
+        
+        // Auto-generate a PC ID for this session
+        const autoPcId = `PC-${sessionId.substring(0, 8).toUpperCase()}`;
         
         res.json({
             success: true,
             sessionId: sessionId,
             agentCode: agentCode,
-            message: 'Credentials ready for execution'
+            autoPcId: autoPcId,
+            message: 'Agent initialized successfully',
+            instructions: {
+                step1: 'Agent window will open automatically',
+                step2: 'PC will auto-register with ID: ' + autoPcId,
+                step3: 'Monitor status in Registered PCs tab'
+            },
+            nextSteps: [
+                'Agent execution window opened',
+                'PC will auto-register in dashboard',
+                'Check Registered PCs tab for status'
+            ]
         });
         
     } catch (error) {
         console.error('Run credentials error:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to process credentials'
+            error: 'Internal server error',
+            code: 'INTERNAL_ERROR',
+            details: error.message
         });
     }
 });
@@ -127,7 +146,7 @@ setInterval(() => {
     }
 }, 60 * 60 * 1000); // Run every hour
 
-function generateAgentCodeWithApiKey(apiKey) {
+function generateAgentCodeWithApiKey(apiKey, sessionId) {
     const websiteUrl = process.env.RENDER_EXTERNAL_URL || 'https://dynamic-website-hzu1.onrender.com';
     
     return `<!DOCTYPE html>
@@ -307,5 +326,61 @@ function generateAgentCodeWithApiKey(apiKey) {
 </body>
 </html>`;
 }
+
+// Get registered PCs list
+router.get('/api/registered-pcs', (req, res) => {
+    try {
+        // In a real implementation, this would query a database
+        // For now, return a mock response that can be enhanced
+        const mockPCs = [
+            {
+                pcId: 'PC-001',
+                pcName: 'Main Desktop',
+                owner: 'User',
+                pcType: 'Desktop',
+                location: 'Office',
+                status: 'ONLINE',
+                lastSeen: new Date().toISOString(),
+                registeredAt: new Date().toISOString()
+            }
+        ];
+        
+        res.json({
+            success: true,
+            pcs: mockPCs,
+            totalPCs: mockPCs.length
+        });
+        
+    } catch (error) {
+        console.error('Failed to get registered PCs:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Delete PC endpoint
+router.delete('/api/pc/:pcId', (req, res) => {
+    try {
+        const { pcId } = req.params;
+        
+        console.log(`🗑️ Deleting PC: ${pcId}`);
+        
+        // In a real implementation, this would delete from database
+        // For now, return success response
+        res.json({
+            success: true,
+            message: `PC ${pcId} deleted successfully`
+        });
+        
+    } catch (error) {
+        console.error('Failed to delete PC:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;
