@@ -1,185 +1,211 @@
-// PC Agent - REAL connection to dashboard
-class PCAgent {
-    constructor(pcId, authToken, serverUrl) {
-        this.pcId = pcId;
-        this.authToken = authToken;
-        this.serverUrl = serverUrl || 'https://dynamic-website-hzu1.onrender.com';
-        this.heartbeatInterval = null;
-        this.isConnected = false;
-    }
+// Downloadable agent.js - Real PC Agent
+// Usage: node agent.js <pc_id> <auth_token> <server_url>
 
-    async start() {
-        try {
-            console.log(`🚀 Starting PC Agent for ${this.pcId}`);
-            
-            // Get system info
-            const systemInfo = await this.getSystemInfo();
-            
-            // Register with server
-            await this.register(systemInfo);
-            
-            // Start heartbeat
-            this.startHeartbeat();
-            
-            console.log(`✅ PC Agent started successfully for ${this.pcId}`);
-            
-        } catch (error) {
-            console.error('❌ Failed to start PC Agent:', error);
-            setTimeout(() => this.start(), 5000); // Retry after 5 seconds
-        }
-    }
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
-    async getSystemInfo() {
-        const info = {
-            hostname: this.getHostname(),
-            OS: this.getOS(),
-            local_ip: this.getLocalIP()
-        };
-        
-        console.log('📊 System Info:', info);
-        return info;
-    }
-
-    getHostname() {
-        return typeof window !== 'undefined' && window.location 
-            ? window.location.hostname 
-            : (typeof require !== 'undefined' ? require('os').hostname() : 'Unknown');
-    }
-
-    getOS() {
-        if (typeof window !== 'undefined') {
-            return navigator.platform || 'Unknown';
-        } else if (typeof require !== 'undefined') {
-            const os = require('os');
-            return `${os.type()} ${os.release()}` || 'Unknown';
-        }
-        return 'Unknown';
-    }
-
-    getLocalIP() {
-        if (typeof window !== 'undefined') {
-            return 'Browser';
-        } else if (typeof require !== 'undefined') {
-            const os = require('os');
-            const interfaces = os.networkInterfaces();
-            for (const name of Object.keys(interfaces)) {
-                for (const iface of interfaces[name]) {
-                    if (iface.family === 'IPv4' && !iface.internal) {
-                        return iface.address;
-                    }
-                }
-            }
-        }
-        return 'Unknown';
-    }
-
-    async register(systemInfo) {
-        const response = await fetch(`${this.serverUrl}/api/register-agent`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                pc_id: this.pcId,
-                auth_token: this.authToken,
-                hostname: systemInfo.hostname,
-                OS: systemInfo.OS,
-                local_ip: systemInfo.local_ip
-            })
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            this.isConnected = true;
-            console.log(`✅ Registered successfully: ${this.pcId}`);
-        } else {
-            throw new Error(result.error || 'Registration failed');
-        }
-    }
-
-    startHeartbeat() {
-        // Send heartbeat every 3 seconds
-        this.heartbeatInterval = setInterval(async () => {
-            try {
-                const metrics = await this.getMetrics();
-                await this.sendHeartbeat(metrics);
-            } catch (error) {
-                console.error('❌ Heartbeat failed:', error);
-            }
-        }, 3000);
-
-        // Send initial heartbeat
-        this.sendHeartbeat({});
-    }
-
-    async getMetrics() {
-        if (typeof window !== 'undefined') {
-            // Browser metrics
-            return {
-                cpu: 'N/A',
-                ram: 'N/A'
-            };
-        } else if (typeof require !== 'undefined') {
-            // Node.js metrics
-            const os = require('os');
-            const cpuUsage = process.cpuUsage();
-            const memoryUsage = process.memoryUsage();
-            const totalMemory = os.totalmem();
-            const usedMemory = memoryUsage.rss;
-            
-            return {
-                cpu: Math.round(cpuUsage.user / 1000000), // Convert to percentage
-                ram: Math.round((usedMemory / totalMemory) * 100)
-            };
-        }
-        return { cpu: 0, ram: 0 };
-    }
-
-    async sendHeartbeat(metrics) {
-        const response = await fetch(`${this.serverUrl}/api/heartbeat`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                pc_id: this.pcId,
-                timestamp: new Date().toISOString(),
-                cpu: metrics.cpu,
-                ram: metrics.ram
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Heartbeat failed: ${response.status}`);
-        }
-    }
-
-    stop() {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
-        this.isConnected = false;
-        console.log(`🛑 PC Agent stopped: ${this.pcId}`);
-    }
+// Parse command line arguments
+const args = process.argv.slice(2);
+if (args.length < 3) {
+    console.error('❌ ERROR: Missing required arguments');
+    console.error('Usage: node agent.js <pc_id> <auth_token> <server_url>');
+    console.error('Example: node agent.js PC-12345 abcdef123456 https://dynamic-website-hzu1.onrender.com');
+    process.exit(1);
 }
 
-// Auto-start if credentials are provided
-if (typeof window !== 'undefined') {
-    // Browser environment - check for credentials in URL or localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    const pcId = urlParams.get('pc_id') || localStorage.getItem('pc_id');
-    const authToken = urlParams.get('auth_token') || localStorage.getItem('auth_token');
+const [pcId, authToken, serverUrl] = args;
+let isRunning = true;
+let heartbeatInterval = null;
+let lastHeartbeatSuccess = false;
+
+// Log file setup in current directory
+const logFile = path.join(process.cwd(), 'agent.log');
+const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
+function log(level, message) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] [${level}] [${pcId}] ${message}`;
+    console.log(logMessage);
+    logStream.write(logMessage + '\n');
+}
+
+function makeRequest(url, data, callback) {
+    const isHttps = url.startsWith('https://');
+    const client = isHttps ? https : http;
+    const urlObj = new URL(url);
     
-    if (pcId && authToken) {
-        const agent = new PCAgent(pcId, authToken);
-        agent.start();
-    } else {
-        console.log('⚠️ PC Agent: Missing credentials. Provide pc_id and auth_token as URL parameters or in localStorage.');
-        console.log('Example: agent.html?pc_id=PC-123-abc&auth_token=your_token_here');
-    }
-} else if (typeof module !== 'undefined' && module.exports) {
-    // Node.js environment
-    module.exports = PCAgent;
+    const postData = JSON.stringify(data);
+    
+    const options = {
+        hostname: urlObj.hostname,
+        port: urlObj.port || (isHttps ? 443 : 80),
+        path: urlObj.pathname,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+            'User-Agent': `PC-Agent/${pcId}`,
+            'Authorization': `Bearer ${authToken}`
+        }
+    };
+
+    const req = client.request(options, (res) => {
+        let responseData = '';
+        
+        res.on('data', (chunk) => {
+            responseData += chunk;
+        });
+        
+        res.on('end', () => {
+            try {
+                const parsedData = JSON.parse(responseData);
+                callback(null, res.statusCode, parsedData);
+            } catch (error) {
+                callback(error, res.statusCode, null);
+            }
+        });
+    });
+
+    req.on('error', (error) => {
+        callback(error, null, null);
+    });
+
+    req.on('timeout', () => {
+        req.destroy();
+        callback(new Error('Request timeout'), null, null);
+    });
+
+    req.setTimeout(10000); // 10 second timeout
+    req.write(postData);
+    req.end();
 }
+
+function sendHeartbeat() {
+    if (!isRunning) return;
+
+    const heartbeatData = {
+        pc_id: pcId,
+        timestamp: Date.now(),
+        status: 'ONLINE',
+        system_info: {
+            platform: process.platform,
+            arch: process.arch,
+            node_version: process.version,
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            last_heartbeat_success: lastHeartbeatSuccess,
+            hostname: os.hostname(),
+            cwd: process.cwd()
+        }
+    };
+
+    makeRequest(`${serverUrl}/api/heartbeat`, heartbeatData, (error, statusCode, data) => {
+        if (error) {
+            log('ERROR', `Heartbeat failed: ${error.message}`);
+            lastHeartbeatSuccess = false;
+        } else if (statusCode === 200) {
+            log('INFO', `💓 Heartbeat successful: ${data.message || 'OK'}`);
+            lastHeartbeatSuccess = true;
+        } else if (statusCode === 401) {
+            log('ERROR', '❌ Authentication failed - invalid pc_id or auth_token');
+            log('ERROR', 'Please check your credentials and restart agent');
+            isRunning = false;
+        } else {
+            log('ERROR', `❌ Heartbeat failed with status ${statusCode}: ${JSON.stringify(data)}`);
+            lastHeartbeatSuccess = false;
+        }
+    });
+}
+
+function registerAgent() {
+    const registerData = {
+        pc_id: pcId,
+        auth_token: authToken,
+        system_info: {
+            platform: process.platform,
+            arch: process.arch,
+            node_version: process.version,
+            hostname: os.hostname(),
+            cwd: process.cwd()
+        }
+    };
+
+    makeRequest(`${serverUrl}/api/register-agent`, registerData, (error, statusCode, data) => {
+        if (error) {
+            log('ERROR', `❌ Registration failed: ${error.message}`);
+            log('ERROR', 'Please check server URL and network connection');
+            process.exit(1);
+        } else if (statusCode === 200) {
+            log('INFO', `✅ Agent registered successfully: ${data.message}`);
+            log('INFO', `🚀 Starting heartbeat every 3 seconds...`);
+            
+            // Start heartbeat interval
+            heartbeatInterval = setInterval(sendHeartbeat, 3000);
+            
+            // Send first heartbeat immediately
+            sendHeartbeat();
+        } else {
+            log('ERROR', `❌ Registration failed with status ${statusCode}: ${JSON.stringify(data)}`);
+            process.exit(1);
+        }
+    });
+}
+
+function shutdown() {
+    log('INFO', '🛑 Shutting down agent...');
+    isRunning = false;
+    
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+    
+    // Send offline status
+    const offlineData = {
+        pc_id: pcId,
+        timestamp: Date.now(),
+        status: 'OFFLINE',
+        shutdown_reason: 'Agent stopped'
+    };
+
+    makeRequest(`${serverUrl}/api/heartbeat`, offlineData, () => {
+        log('INFO', '✅ Agent shutdown complete');
+        logStream.end();
+        process.exit(0);
+    });
+}
+
+// Handle process termination
+process.on('SIGINT', () => {
+    log('INFO', '📡 Received SIGINT (Ctrl+C)');
+    shutdown();
+});
+
+process.on('SIGTERM', () => {
+    log('INFO', '📡 Received SIGTERM');
+    shutdown();
+});
+
+process.on('uncaughtException', (error) => {
+    log('ERROR', `💥 Uncaught exception: ${error.message}`);
+    log('ERROR', error.stack);
+    shutdown();
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    log('ERROR', `💥 Unhandled rejection at ${promise}: ${reason}`);
+    shutdown();
+});
+
+// Start agent
+log('INFO', '🚀 Starting PC Agent...');
+log('INFO', `📍 Working Directory: ${process.cwd()}`);
+log('INFO', `🆔 PC ID: ${pcId}`);
+log('INFO', `🌐 Server: ${serverUrl}`);
+log('INFO', `💻 Platform: ${process.platform} ${process.arch}`);
+log('INFO', `📦 Node.js: ${process.version}`);
+log('INFO', `🖥️ Hostname: ${os.hostname()}`);
+
+registerAgent();

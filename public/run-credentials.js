@@ -83,6 +83,52 @@ function showPCInstructions(data) {
     }).catch(() => {
         console.log('Could not copy to clipboard');
     });
+    
+    // Show download link for agent.js
+    const agentDownloadUrl = `${window.location.origin}/agent.js`;
+    
+    // Create download button
+    const downloadBtn = document.createElement('button');
+    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download agent.js';
+    downloadBtn.className = 'btn btn-success';
+    downloadBtn.style.marginTop = '10px';
+    downloadBtn.style.marginRight = '10px';
+    downloadBtn.onclick = () => {
+        window.open(agentDownloadUrl, '_blank');
+        showNotification('success', '📥 Download Started', 'agent.js download started');
+    };
+    
+    // Add to UI
+    const apiStatusText = document.getElementById('apiStatusText');
+    if (apiStatusText) {
+        const downloadSection = document.createElement('div');
+        downloadSection.innerHTML = `
+            <div style="margin-top: 15px; padding: 10px; background: rgba(0, 123, 255, 0.1); border-radius: 4px; border-left: 3px solid #007bff;">
+                <strong>📥 STEP 1: Download Agent</strong><br>
+                <button onclick="window.open('${agentDownloadUrl}', '_blank')" style="background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 5px;">
+                    <i class="fas fa-download"></i> Download agent.js
+                </button>
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: rgba(40, 167, 69, 0.1); border-radius: 4px; border-left: 3px solid #28a745;">
+                <strong>📁 STEP 2: Save & Run</strong><br>
+                <ol style="margin: 5px 0; padding-left: 20px; color: rgba(255, 255, 255, 0.9);">
+                    <li>Save agent.js to any folder (e.g., Desktop/agent)</li>
+                    <li>Open CMD/PowerShell in that folder</li>
+                    <li>Run: <code style="background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 2px;">${command}</code></li>
+                </ol>
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: rgba(255, 193, 7, 0.1); border-radius: 4px; border-left: 3px solid #ffc107;">
+                <strong>🚀 STEP 3: Monitor</strong><br>
+                <ul style="margin: 5px 0; padding-left: 20px; color: rgba(255, 255, 255, 0.9);">
+                    <li>Agent will connect automatically</li>
+                    <li>PC status will change to ONLINE</li>
+                    <li>Monitor in Registered PCs tab</li>
+                    <li>Close browser → agent stays ONLINE</li>
+                </ul>
+            </div>
+        `;
+        apiStatusText.appendChild(downloadSection);
+    }
 }
 
 // Handle execution errors
@@ -147,19 +193,16 @@ function updateRunCredentialsUI(data) {
             </div>
             <div style="margin-bottom: 10px;">
                 <strong>🚀 Next Steps:</strong> 
-                <span style="color: #28a745;">Run agent on your PC</span>
+                <span style="color: #28a745;">Download agent.js and run on your PC</span>
             </div>
             <div style="padding: 10px; background: rgba(0, 255, 136, 0.1); border-radius: 4px; border-left: 3px solid #00ff88;">
                 <strong>📋 Agent Command:</strong>
                 <div style="margin: 5px 0; padding: 8px; background: rgba(0, 0, 0, 0.3); border-radius: 4px; font-family: monospace; font-size: 0.9rem;">
                     ${data.agentCommand}
                 </div>
-                <ol style="margin: 10px 0; padding-left: 20px; color: rgba(255, 255, 255, 0.8);">
-                    <li>Download agent.js to your PC</li>
-                    <li>Run the command above in terminal</li>
-                    <li>Agent will connect automatically</li>
-                    <li>Monitor status in dashboard</li>
-                </ol>
+                <div style="margin-top: 10px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                    <strong>⚠️ IMPORTANT:</strong> Save agent.js to your PC first, then run the command in the same folder.
+                </div>
             </div>
         `;
     }
