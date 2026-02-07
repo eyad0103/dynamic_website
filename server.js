@@ -7,6 +7,7 @@ const fs = require('fs');
 
 // Import run-credentials API
 const runCredentialsRouter = require('./run-credentials-api.js');
+const enhancedRoutes = require('./enhanced-backend-routes.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -113,6 +114,7 @@ app.use(express.static('public'));
 
 // Use run-credentials API routes
 app.use(runCredentialsRouter);
+app.use(enhancedRoutes);
 
 // Set EJS as view engine
 app.set('view engine', 'ejs');
