@@ -115,59 +115,76 @@
             right: 20px;
             z-index: 1000;
             min-width: 300px;
+            max-width: 400px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             animation: slideIn 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .notification-success {
             background: linear-gradient(135deg, #00ff88, #00cc70);
             color: #000;
+            border-color: #00cc70;
         }
         
         .notification-error {
-            background: linear-gradient(135deg, #ff6b6b, #ff5252);
+            background: linear-gradient(135deg, #ff4757, #ff3838);
             color: #fff;
+            border-color: #ff3838;
         }
         
         .notification-warning {
-            background: linear-gradient(135deg, #ffa726, #ff9800);
+            background: linear-gradient(135deg, #ffa502, #ff8c00);
             color: #000;
+            border-color: #ff8c00;
         }
         
         .notification-info {
-            background: linear-gradient(135deg, #42a5f5, #2196f3);
+            background: linear-gradient(135deg, #3742fa, #2f3542);
             color: #fff;
+            border-color: #3742fa;
         }
         
         .notification-content {
             padding: 1rem;
+            position: relative;
         }
         
         .notification-content h4 {
             margin: 0 0 0.5rem 0;
             font-size: 1rem;
+            font-weight: 600;
         }
         
         .notification-content p {
             margin: 0;
             font-size: 0.9rem;
+            line-height: 1.4;
         }
         
         .notification-close {
             position: absolute;
             top: 0.5rem;
             right: 0.5rem;
-            background: none;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
             color: inherit;
             font-size: 1.2rem;
             cursor: pointer;
             opacity: 0.7;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
         
         .notification-close:hover {
             opacity: 1;
+            background: rgba(255, 255, 255, 0.3);
         }
         
         @keyframes slideIn {
@@ -178,6 +195,17 @@
             to {
                 transform: translateX(0);
                 opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
             }
         }
         .dashboard-container {
@@ -1412,7 +1440,7 @@
                                     🔑 Your OpenRouter API Key
                                 </label>
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." value="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" style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); runCredentials(); }">
+                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); runCredentials(); }">
                                     <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
                                         <i class="fas fa-eye"></i>
                                     </button>

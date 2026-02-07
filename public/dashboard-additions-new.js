@@ -18,23 +18,67 @@ function showNotification(type, title, message) {
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
+    
+    // Calculate vertical position based on existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    const topOffset = 20 + (existingNotifications.length * 80); // 80px spacing per notification
+    notification.style.top = `${topOffset}px`;
+    
     notification.innerHTML = `
         <div class="notification-content">
             <h4>${title}</h4>
             <p>${message}</p>
         </div>
-        <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+        <button class="notification-close" onclick="removeNotification(this)">×</button>
     `;
     
     // Add to page
     document.body.appendChild(notification);
     
-    // Auto-remove after 5 seconds
+    // Auto-remove after appropriate time based on type
+    const autoDismissTime = {
+        'success': 4000,
+        'error': 8000,
+        'warning': 6000,
+        'info': 5000
+    }[type] || 5000;
+    
     setTimeout(() => {
         if (notification.parentElement) {
-            notification.remove();
+            removeNotification(notification.querySelector('.notification-close'));
         }
-    }, 5000);
+    }, autoDismissTime);
+    
+    // Limit maximum notifications to 5
+    const allNotifications = document.querySelectorAll('.notification');
+    if (allNotifications.length > 5) {
+        const oldest = allNotifications[0];
+        if (oldest) {
+            removeNotification(oldest.querySelector('.notification-close'));
+        }
+    }
+}
+
+function removeNotification(closeButton) {
+    const notification = closeButton.closest('.notification');
+    if (notification) {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+                // Reposition remaining notifications
+                repositionNotifications();
+            }
+        }, 300);
+    }
+}
+
+function repositionNotifications() {
+    const notifications = document.querySelectorAll('.notification');
+    notifications.forEach((notification, index) => {
+        const topOffset = 20 + (index * 80);
+        notification.style.top = `${topOffset}px`;
+    });
 }
 
 function loadPcList() {

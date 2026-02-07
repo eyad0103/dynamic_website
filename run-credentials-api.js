@@ -7,14 +7,36 @@ const router = express.Router();
 const activeCredentials = new Map();
 
 router.post('/api/run-credentials', (req, res) => {
+    // Set timeout for this request
+    req.setTimeout(8000, () => {
+        console.error('Request timeout for /api/run-credentials');
+        if (!res.headersSent) {
+            res.status(408).json({
+                success: false,
+                error: 'Request timeout',
+                code: 'REQUEST_TIMEOUT'
+            });
+        }
+    });
+    
     try {
-        const { apiKey } = req.body;
+        const { apiKey, timestamp } = req.body;
         
-        if (!apiKey) {
+        // Validate request structure
+        if (!apiKey || typeof apiKey !== 'string') {
             return res.status(400).json({
                 success: false,
-                error: 'API key is required',
+                error: 'API key is required and must be a string',
                 code: 'MISSING_API_KEY'
+            });
+        }
+        
+        // Check timestamp to prevent replay attacks
+        if (timestamp && (Date.now() - timestamp > 300000)) { // 5 minutes
+            return res.status(400).json({
+                success: false,
+                error: 'Request timestamp is too old',
+                code: 'OLD_TIMESTAMP'
             });
         }
         
@@ -27,15 +49,19 @@ router.post('/api/run-credentials', (req, res) => {
             });
         }
         
+        // Clean up old sessions first (prevent memory issues)
+        cleanupOldSessions();
+        
         // Generate unique session ID
         const sessionId = crypto.randomBytes(16).toString('hex');
         
-        // Store credentials temporarily
+        // Store credentials with metadata
         activeCredentials.set(sessionId, {
             apiKey: apiKey,
             createdAt: new Date().toISOString(),
             userAgent: req.get('User-Agent') || 'Unknown',
-            ipAddress: req.ip || req.connection.remoteAddress || 'Unknown'
+            ipAddress: req.ip || req.connection.remoteAddress || 'Unknown',
+            timestamp: Date.now()
         });
         
         console.log(`🔑 Credentials stored for session: ${sessionId.substring(0, 8)}...`);
@@ -46,34 +72,53 @@ router.post('/api/run-credentials', (req, res) => {
         // Auto-generate a PC ID for this session
         const autoPcId = `PC-${sessionId.substring(0, 8).toUpperCase()}`;
         
-        res.json({
-            success: true,
-            sessionId: sessionId,
-            agentCode: agentCode,
-            autoPcId: autoPcId,
-            message: 'Agent initialized successfully',
-            instructions: {
-                step1: 'Agent window will open automatically',
-                step2: 'PC will auto-register with ID: ' + autoPcId,
-                step3: 'Monitor status in Registered PCs tab'
-            },
-            nextSteps: [
-                'Agent execution window opened',
-                'PC will auto-register in dashboard',
-                'Check Registered PCs tab for status'
-            ]
-        });
+        // Send response immediately
+        if (!res.headersSent) {
+            res.json({
+                success: true,
+                sessionId: sessionId,
+                agentCode: agentCode,
+                autoPcId: autoPcId,
+                message: 'Agent initialized successfully',
+                instructions: {
+                    step1: 'Agent window will open automatically',
+                    step2: 'PC will auto-register with ID: ' + autoPcId,
+                    step3: 'Monitor status in Registered PCs tab'
+                },
+                nextSteps: [
+                    'Agent execution window opened',
+                    'PC will auto-register in dashboard',
+                    'Check Registered PCs tab for status'
+                ],
+                timestamp: Date.now()
+            });
+        }
         
     } catch (error) {
         console.error('Run credentials error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error',
-            code: 'INTERNAL_ERROR',
-            details: error.message
-        });
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error',
+                code: 'INTERNAL_ERROR',
+                details: process.env.NODE_ENV === 'development' ? error.message : 'Contact administrator'
+            });
+        }
     }
 });
+
+// Clean up old sessions to prevent memory issues
+function cleanupOldSessions() {
+    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+    const now = Date.now();
+    
+    for (const [sessionId, credentials] of activeCredentials.entries()) {
+        if (now - new Date(credentials.createdAt).getTime() > oneHour) {
+            activeCredentials.delete(sessionId);
+            console.log(`🧹 Cleaned expired session: ${sessionId.substring(0, 8)}`);
+        }
+    }
+}
 
 // Get credentials for session
 router.get('/api/credentials/:sessionId', (req, res) => {

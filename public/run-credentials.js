@@ -1,10 +1,10 @@
 // Run Credentials functionality - One-Click Automatic Agent Runner
 async function runCredentials() {
-    const apiKey = document.getElementById('apiKey').value;
+    // Always get the latest API key from input
+    const apiKey = document.getElementById('apiKey').value.trim();
     
     if (!apiKey) {
         showNotification('error', 'Missing API Key', 'Please enter an API key first');
-        // Focus on API key input
         document.getElementById('apiKey').focus();
         return;
     }
@@ -15,31 +15,53 @@ async function runCredentials() {
         return;
     }
     
+    // Clear any existing sessions to ensure fresh start
+    clearExistingSessions();
+    
+    const runBtn = document.querySelector('button[onclick="runCredentials()"]');
+    const originalText = runBtn ? runBtn.innerHTML : '';
+    
     try {
-        showNotification('info', '🚀 Starting Agent', 'Initializing automatic agent runner...');
+        // Immediate UI feedback
+        showNotification('info', '🚀 Starting Agent', 'Connecting to server...');
         
-        // Disable button to prevent multiple clicks
-        const runBtn = document.querySelector('button[onclick="runCredentials()"]');
         if (runBtn) {
             runBtn.disabled = true;
-            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
         }
         
-        // Send API key to backend
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        // Send API key to backend with timeout
         const response = await fetch('/api/run-credentials', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
             },
             body: JSON.stringify({
-                apiKey: apiKey
-            })
+                apiKey: apiKey,
+                timestamp: Date.now() // Prevent caching
+            }),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
         
         const data = await response.json();
         
         if (data.success) {
-            showNotification('success', '✅ Agent Ready!', 'Agent window opened automatically');
+            showNotification('success', '✅ Agent Ready!', `Agent initialized with PC ID: ${data.autoPcId}`);
+            
+            if (runBtn) {
+                runBtn.innerHTML = '<i class="fas fa-check"></i> Agent Ready';
+            }
             
             // Open agent execution window with optimized settings
             const agentWindow = window.open(
@@ -48,15 +70,14 @@ async function runCredentials() {
                 'width=1000,height=800,scrollbars=yes,resizable=yes,location=yes,menubar=no'
             );
             
-            // Check if window opened successfully
             if (!agentWindow || agentWindow.closed || typeof agentWindow.closed === 'undefined') {
-                showNotification('warning', 'Popup Blocked', 'Please allow popups for this site to open the agent window');
+                showNotification('warning', '⚠️ Popup Blocked', 'Please allow popups for this site to open the agent window');
             }
             
             // Update UI to show session info
-            updateRunCredentialsUI(data.sessionId, apiKey);
+            updateRunCredentialsUI(data.sessionId, apiKey, data.autoPcId);
             
-            // Auto-switch to Registered PCs tab after 2 seconds to monitor agent
+            // Auto-switch to Registered PCs tab after 2 seconds
             setTimeout(() => {
                 const registeredPcsTab = document.querySelector('button[onclick*="registered-pcs"]');
                 if (registeredPcsTab) {
@@ -66,24 +87,47 @@ async function runCredentials() {
             }, 2000);
             
         } else {
-            showNotification('error', '❌ Failed to Start Agent', data.error || 'Unknown error occurred');
+            throw new Error(data.error || data.message || 'Unknown server error');
         }
         
     } catch (error) {
         console.error('Run credentials error:', error);
-        showNotification('error', '❌ Connection Error', 'Failed to start agent: ' + error.message);
+        
+        let errorMessage = 'Failed to start agent';
+        let errorType = 'error';
+        
+        if (error.name === 'AbortError') {
+            errorMessage = 'Request timed out - please try again';
+            errorType = 'warning';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage = 'Network error - check your connection';
+            errorType = 'error';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        showNotification(errorType, '❌ Failed to Start Agent', errorMessage);
+        
     } finally {
-        // Re-enable button
-        const runBtn = document.querySelector('button[onclick="runCredentials()"]');
+        // Always re-enable button
         if (runBtn) {
             runBtn.disabled = false;
-            runBtn.innerHTML = '<i class="fas fa-play"></i> Run Credentials';
+            runBtn.innerHTML = originalText;
         }
     }
 }
 
-function updateRunCredentialsUI(sessionId, apiKey) {
-    // Update the API Keys tab to show session info
+// Clear existing sessions to ensure fresh start
+function clearExistingSessions() {
+    // Clear any stored session data
+    localStorage.removeItem('agentSession');
+    localStorage.removeItem('lastApiKey');
+    localStorage.removeItem('pcId');
+    localStorage.removeItem('authToken');
+}
+
+function updateRunCredentialsUI(sessionId, apiKey, autoPcId) {
+    // Update API Keys tab to show session info
     const apiStatus = document.getElementById('apiStatus');
     const apiStatusText = document.getElementById('apiStatusText');
     
@@ -92,7 +136,8 @@ function updateRunCredentialsUI(sessionId, apiKey) {
         apiStatusText.innerHTML = `
             <div style="margin-bottom: 10px;">
                 <strong>✅ Agent Session Active</strong><br>
-                <span style="color: #00ff88;">Session ID: ${sessionId.substring(0, 8)}...</span>
+                <span style="color: #00ff88;">Session ID: ${sessionId.substring(0, 8)}...</span><br>
+                <span style="color: #00ff88;">PC ID: ${autoPcId || 'Generated'}</span>
             </div>
             <div style="margin-bottom: 10px;">
                 <strong>🚀 Agent Status:</strong> 
