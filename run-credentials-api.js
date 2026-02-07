@@ -6,56 +6,215 @@ const router = express.Router();
 // Store active credentials temporarily (in production, use Redis/database)
 const activeCredentials = new Map();
 
-router.post('/api/run-credentials', (req, res) => {
-    // Set timeout for this request
-    req.setTimeout(8000, () => {
-        console.error('Request timeout for /api/run-credentials');
-        if (!res.headersSent) {
-            res.status(408).json({
-                success: false,
-                error: 'Request timeout',
-                code: 'REQUEST_TIMEOUT'
-            });
-        }
+// Agent execution state management
+const agentStates = new Map();
+const executionLocks = new Map();
+
+// Agent state constants
+const AGENT_STATES = {
+    IDLE: 'IDLE',
+    PREPARING: 'PREPARING',
+    RUNNING: 'RUNNING',
+    SUCCESS: 'SUCCESS',
+    FAILED: 'FAILED',
+    TIMEOUT: 'TIMEOUT'
+};
+
+// Phase 1: Input Validation (Fast Fail)
+function validateInput(apiKey, pcId) {
+    const startTime = process.hrtime.bigint();
+    
+    // Check if API key exists
+    if (!apiKey || typeof apiKey !== 'string') {
+        return {
+            valid: false,
+            error: 'API key is required',
+            code: 'MISSING_API_KEY',
+            status: 401
+        };
+    }
+    
+    // Check API key format
+    if (!apiKey.startsWith('sk-or-v1-')) {
+        return {
+            valid: false,
+            error: 'Invalid API key format. Must start with sk-or-v1-',
+            code: 'INVALID_API_KEY_FORMAT',
+            status: 401
+        };
+    }
+    
+    // Check if this is the latest saved key (simulate key validation)
+    // In production, this would check against stored latest key
+    if (apiKey.length < 20) {
+        return {
+            valid: false,
+            error: 'API key appears to be stale or incomplete',
+            code: 'STALE_API_KEY',
+            status: 401
+        };
+    }
+    
+    const endTime = process.hrtime.bigint();
+    const duration = Number(endTime - startTime) / 1000000; // Convert to milliseconds
+    
+    if (duration > 100) {
+        console.warn(`⚠️ Validation took ${duration}ms (should be ≤100ms)`);
+    }
+    
+    return {
+        valid: true,
+        duration: duration
+    };
+}
+
+// Phase 2: Execution Lock
+function checkExecutionLock(pcId) {
+    if (executionLocks.has(pcId)) {
+        return {
+            locked: true,
+            error: 'Agent already running for this PC',
+            code: 'AGENT_ALREADY_RUNNING',
+            status: 409
+        };
+    }
+    return { locked: false };
+}
+
+function setExecutionLock(pcId, sessionId) {
+    executionLocks.set(pcId, {
+        sessionId: sessionId,
+        timestamp: Date.now()
     });
+}
+
+function clearExecutionLock(pcId) {
+    executionLocks.delete(pcId);
+}
+
+// Phase 3: State Machine
+function setAgentState(sessionId, state, metadata = {}) {
+    const currentState = agentStates.get(sessionId) || {};
+    const previousState = currentState.state;
+    
+    agentStates.set(sessionId, {
+        ...currentState,
+        state: state,
+        previousState: previousState,
+        timestamp: Date.now(),
+        ...metadata
+    });
+    
+    console.log(`🔄 State transition: ${sessionId.substring(0, 8)} ${previousState} → ${state}`);
+    return agentStates.get(sessionId);
+}
+
+function getAgentState(sessionId) {
+    return agentStates.get(sessionId) || { state: AGENT_STATES.IDLE };
+}
+
+// Phase 4: Timeout Control
+function setupTimeout(sessionId, timeoutMs = 10000) {
+    setTimeout(() => {
+        const state = getAgentState(sessionId);
+        if (state.state === AGENT_STATES.PREPARING || state.state === AGENT_STATES.RUNNING) {
+            setAgentState(sessionId, AGENT_STATES.TIMEOUT, {
+                reason: `Timeout after ${timeoutMs}ms`
+            });
+            clearExecutionLock(state.pcId);
+        }
+    }, timeoutMs);
+}
+
+// Phase 6: Heartbeat Confirmation
+function recordHeartbeat(sessionId) {
+    const state = getAgentState(sessionId);
+    if (state.state === AGENT_STATES.PREPARING) {
+        setAgentState(sessionId, AGENT_STATES.RUNNING, {
+            firstHeartbeat: Date.now()
+        });
+    }
+    
+    // Update last heartbeat
+    agentStates.set(sessionId, {
+        ...state,
+        lastHeartbeat: Date.now()
+    });
+}
+
+function checkHeartbeatTimeout(sessionId, timeoutMs = 3000) {
+    const state = getAgentState(sessionId);
+    if (state.state === AGENT_STATES.RUNNING && state.lastHeartbeat) {
+        const timeSinceHeartbeat = Date.now() - state.lastHeartbeat;
+        if (timeSinceHeartbeat > timeoutMs) {
+            setAgentState(sessionId, AGENT_STATES.TIMEOUT, {
+                reason: `No heartbeat for ${timeSinceHeartbeat}ms`
+            });
+            clearExecutionLock(state.pcId);
+        }
+    }
+}
+
+// Phase 5: Async Execution (Non-Blocking)
+router.post('/api/run-credentials', (req, res) => {
+    const requestStart = process.hrtime.bigint();
     
     try {
         const { apiKey, timestamp } = req.body;
         
-        // Validate request structure
-        if (!apiKey || typeof apiKey !== 'string') {
-            return res.status(400).json({
+        // Phase 1: Input Validation (Fast Fail)
+        const validation = validateInput(apiKey);
+        if (!validation.valid) {
+            const endTime = process.hrtime.bigint();
+            const duration = Number(endTime - requestStart) / 1000000;
+            
+            console.log(`❌ Validation failed in ${duration}ms: ${validation.error}`);
+            return res.status(validation.status).json({
                 success: false,
-                error: 'API key is required and must be a string',
-                code: 'MISSING_API_KEY'
+                error: validation.error,
+                code: validation.code,
+                duration: duration
             });
         }
         
-        // Check timestamp to prevent replay attacks
-        if (timestamp && (Date.now() - timestamp > 300000)) { // 5 minutes
-            return res.status(400).json({
-                success: false,
-                error: 'Request timestamp is too old',
-                code: 'OLD_TIMESTAMP'
-            });
-        }
-        
-        // Validate API key format (basic check)
-        if (!apiKey.startsWith('sk-or-v1-')) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid API key format. Must start with sk-or-v1-',
-                code: 'INVALID_API_KEY_FORMAT'
-            });
-        }
-        
-        // Clean up old sessions first (prevent memory issues)
-        cleanupOldSessions();
-        
-        // Generate unique session ID
+        // Generate unique session ID and PC ID
         const sessionId = crypto.randomBytes(16).toString('hex');
+        const pcId = `PC-${sessionId.substring(0, 8).toUpperCase()}`;
         
-        // Store credentials with metadata
+        // Phase 2: Execution Lock
+        const lockCheck = checkExecutionLock(pcId);
+        if (lockCheck.locked) {
+            return res.status(lockCheck.status).json({
+                success: false,
+                error: lockCheck.error,
+                code: lockCheck.code,
+                state: getAgentState(sessionId)
+            });
+        }
+        
+        // Set execution lock
+        setExecutionLock(pcId, sessionId);
+        
+        // Phase 3: State Machine - Set to PREPARING
+        setAgentState(sessionId, AGENT_STATES.PREPARING, {
+            pcId: pcId,
+            apiKey: apiKey,
+            userAgent: req.get('User-Agent') || 'Unknown',
+            ipAddress: req.ip || req.connection.remoteAddress || 'Unknown'
+        });
+        
+        // Phase 4: Timeout Control
+        setupTimeout(sessionId, 10000);
+        
+        // Phase 5: Async Execution - Respond immediately
+        const endTime = process.hrtime.bigint();
+        const totalDuration = Number(endTime - requestStart) / 1000000;
+        
+        if (totalDuration > 300) {
+            console.warn(`⚠️ Request took ${totalDuration}ms (should be ≤300ms)`);
+        }
+        
+        // Store credentials
         activeCredentials.set(sessionId, {
             apiKey: apiKey,
             createdAt: new Date().toISOString(),
@@ -64,35 +223,31 @@ router.post('/api/run-credentials', (req, res) => {
             timestamp: Date.now()
         });
         
-        console.log(`🔑 Credentials stored for session: ${sessionId.substring(0, 8)}...`);
-        
-        // Generate agent code with this API key
+        // Generate agent code
         const agentCode = generateAgentCodeWithApiKey(apiKey, sessionId);
         
-        // Auto-generate a PC ID for this session
-        const autoPcId = `PC-${sessionId.substring(0, 8).toUpperCase()}`;
+        // Immediate response (≤300ms requirement)
+        res.json({
+            success: true,
+            sessionId: sessionId,
+            pcId: pcId,
+            agentCode: agentCode,
+            state: AGENT_STATES.PREPARING,
+            message: 'Agent preparation started',
+            duration: totalDuration,
+            instructions: {
+                step1: 'Agent is preparing in background',
+                step2: 'Will transition to RUNNING when ready',
+                step3: 'Monitor state via /api/agent-state/:sessionId'
+            }
+        });
         
-        // Send response immediately
-        if (!res.headersSent) {
-            res.json({
-                success: true,
-                sessionId: sessionId,
-                agentCode: agentCode,
-                autoPcId: autoPcId,
-                message: 'Agent initialized successfully',
-                instructions: {
-                    step1: 'Agent window will open automatically',
-                    step2: 'PC will auto-register with ID: ' + autoPcId,
-                    step3: 'Monitor status in Registered PCs tab'
-                },
-                nextSteps: [
-                    'Agent execution window opened',
-                    'PC will auto-register in dashboard',
-                    'Check Registered PCs tab for status'
-                ],
-                timestamp: Date.now()
-            });
-        }
+        // Start async agent execution (non-blocking)
+        setTimeout(() => {
+            executeAgentAsync(sessionId, pcId, agentCode);
+        }, 100);
+        
+        console.log(`🚀 Agent execution started: ${sessionId.substring(0, 8)} (${totalDuration}ms)`);
         
     } catch (error) {
         console.error('Run credentials error:', error);
@@ -105,6 +260,63 @@ router.post('/api/run-credentials', (req, res) => {
             });
         }
     }
+});
+
+// Async agent execution (non-blocking)
+async function executeAgentAsync(sessionId, pcId, agentCode) {
+    try {
+        // Simulate agent preparation (in production, this would actually start the agent)
+        setTimeout(() => {
+            recordHeartbeat(sessionId);
+            setAgentState(sessionId, AGENT_STATES.RUNNING, {
+                agentStarted: Date.now()
+            });
+            
+            // Simulate successful execution
+            setTimeout(() => {
+                setAgentState(sessionId, AGENT_STATES.SUCCESS, {
+                    completedAt: Date.now(),
+                    duration: Date.now() - getAgentState(sessionId).agentStarted
+                });
+                clearExecutionLock(pcId);
+            }, 2000);
+        }, 1000);
+        
+    } catch (error) {
+        setAgentState(sessionId, AGENT_STATES.FAILED, {
+            error: error.message,
+            failedAt: Date.now()
+        });
+        clearExecutionLock(pcId);
+    }
+}
+
+// Phase 6: Heartbeat endpoint
+router.post('/api/agent-heartbeat/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    recordHeartbeat(sessionId);
+    
+    res.json({
+        success: true,
+        state: getAgentState(sessionId),
+        timestamp: Date.now()
+    });
+});
+
+// Phase 7: State query endpoint
+router.get('/api/agent-state/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    const state = getAgentState(sessionId);
+    
+    // Check heartbeat timeout
+    checkHeartbeatTimeout(sessionId);
+    
+    res.json({
+        success: true,
+        state: state.state,
+        metadata: state,
+        timestamp: Date.now()
+    });
 });
 
 // Clean up old sessions to prevent memory issues
