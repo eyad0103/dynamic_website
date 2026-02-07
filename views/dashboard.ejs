@@ -1436,13 +1436,13 @@
                         <span id="apiStatusText">Ready to run agent automatically</span>
                     </div>
                     
-                    <!-- One-Click Agent Runner Section -->
+                    <!-- API Key Management Only -->
                     <div style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05)); border: 2px solid #00ff88; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
                         <h3 style="color: #00ff88; text-align: center; margin-bottom: 1rem;">
-                            🚀 One-Click Agent Runner
+                            🔑 API Key Management
                         </h3>
                         <p style="color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
-                            Just paste your OpenRouter API key and click "Run Agent" - it's that simple!
+                            Save your OpenRouter API key for persistent use across sessions
                         </p>
                         
                         <form class="api-key-form" id="apiKeyForm">
@@ -1451,7 +1451,7 @@
                                     🔑 Your OpenRouter API Key
                                 </label>
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); runCredentials(); }">
+                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); saveApiKey(); }">
                                     <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
                                         <i class="fas fa-eye"></i>
                                     </button>
@@ -1459,12 +1459,12 @@
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
                                 </div>
-                                <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is secure and used only for agent initialization</small>
+                                <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on the server</small>
                             </div>
 
                             <div style="text-align: center; margin-top: 1.5rem;">
-                                <button type="button" class="form-button" onclick="runCredentials()" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
-                                    <i class="fas fa-rocket"></i> 🚀 Run Agent Now
+                                <button type="button" class="form-button" onclick="saveApiKey()" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
+                                    <i class="fas fa-save"></i> 💾 Save API Key
                                 </button>
                             </div>
                         </form>
@@ -1492,6 +1492,16 @@
 
                             <div id="testResult" style="display: none;"></div>
                         </div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">📋 Instructions</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
+                            <strong>API Key Tab:</strong> Only manages your OpenRouter API key<br>
+                            <strong>Create PC Tab:</strong> Create PCs and connect agents<br>
+                            <strong>Registered PCs Tab:</strong> Monitor PC status in real-time
+                        </p>
                     </div>
 
                     <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
@@ -1750,9 +1760,14 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                                 <div style="margin-bottom: 1rem;">
                                     <textarea id="pcDescription" class="form-input" placeholder="Description (optional)" rows="3"></textarea>
                                 </div>
-                                <button id="createPcBtn" class="form-button" style="width: 100%;">
-                                    <i class="fas fa-plus"></i> CREATE PC
-                                </button>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <button id="createPcBtn" class="form-button" onclick="createPC()">
+                                        <i class="fas fa-plus"></i> CREATE PC
+                                    </button>
+                                    <button id="connectAgentBtn" class="form-button" onclick="connectAgent()" style="background: #007bff;">
+                                        <i class="fas fa-link"></i> CONNECT AGENT
+                                    </button>
+                                </div>
                             </div>
                             
                                                         
@@ -3207,6 +3222,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
         loadPcList();
     });
     </script>
-    <script src="/enhanced-dashboard.js"></script>
+    <script src="/notification-system.js"></script>
+    <script src="/unified-frontend.js"></script>
 </body>
 </html>
