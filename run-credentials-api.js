@@ -7,6 +7,9 @@ const router = express.Router();
 const registeredPCs = new Map();
 const pcStatus = new Map(); // ONLINE/OFFLINE status based on heartbeats
 
+// Store API keys (in production, use encrypted database)
+const storedAPIKeys = new Map();
+
 // PC status constants
 const PC_STATES = {
     ONLINE: 'ONLINE',
@@ -330,5 +333,331 @@ function cleanupOfflinePCs() {
 
 // Run cleanup every 5 seconds
 setInterval(cleanupOfflinePCs, 5000);
+
+// NEW: POST /api/save-api-key - Save API key to server
+router.post('/api/save-api-key', (req, res) => {
+    try {
+        const { apiKey } = req.body;
+        
+        // Validate API key
+        const validation = validateAPIKey(apiKey);
+        if (!validation.valid) {
+            return res.status(validation.status).json({
+                success: false,
+                error: validation.error,
+                code: validation.code
+            });
+        }
+        
+        // Store API key with timestamp
+        const keyId = crypto.randomBytes(8).toString('hex');
+        storedAPIKeys.set(keyId, {
+            apiKey: apiKey,
+            createdAt: new Date().toISOString(),
+            lastUsed: new Date().toISOString()
+        });
+        
+        console.log(`🔑 API key saved: ${keyId.substring(0, 4)}...`);
+        
+        res.json({
+            success: true,
+            keyId: keyId,
+            message: 'API key saved successfully'
+        });
+        
+    } catch (error) {
+        console.error('Save API key error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to save API key',
+            code: 'SAVE_ERROR'
+        });
+    }
+});
+
+// NEW: GET /api/get-api-key - Retrieve latest API key
+router.get('/api/get-api-key', (req, res) => {
+    try {
+        // Get the most recent API key
+        let latestKey = null;
+        let latestKeyId = null;
+        
+        for (const [keyId, keyData] of storedAPIKeys.entries()) {
+            if (!latestKey || new Date(keyData.createdAt) > new Date(latestKey.createdAt)) {
+                latestKey = keyData;
+                latestKeyId = keyId;
+            }
+        }
+        
+        if (!latestKey) {
+            return res.json({
+                success: false,
+                error: 'No API key found',
+                code: 'NO_KEY_FOUND'
+            });
+        }
+        
+        // Update last used timestamp
+        latestKey.lastUsed = new Date().toISOString();
+        storedAPIKeys.set(latestKeyId, latestKey);
+        
+        res.json({
+            success: true,
+            apiKey: latestKey.apiKey,
+            createdAt: latestKey.createdAt,
+            lastUsed: latestKey.lastUsed
+        });
+        
+    } catch (error) {
+        console.error('Get API key error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve API key',
+            code: 'RETRIEVE_ERROR'
+        });
+    }
+});
+
+// NEW: GET /agent.js - Serve agent.js as downloadable file
+router.get('/agent.js', (req, res) => {
+    try {
+        // Set headers for file download
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Content-Disposition', 'attachment; filename="agent.js"');
+        res.setHeader('Cache-Control', 'no-cache');
+        
+        // Serve the agent.js file
+        const fs = require('fs');
+        const path = require('path');
+        const agentPath = path.join(__dirname, 'public', 'agent.js');
+        
+        if (fs.existsSync(agentPath)) {
+            res.sendFile(agentPath);
+        } else {
+            // Fallback: provide inline agent code
+            const agentCode = `// Downloadable agent.js - Real PC Agent
+// Usage: node agent.js <pc_id> <auth_token> <server_url>
+
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+if (args.length < 3) {
+    console.error('❌ ERROR: Missing required arguments');
+    console.error('Usage: node agent.js <pc_id> <auth_token> <server_url>');
+    console.error('Example: node agent.js PC-12345 abcdef123456 https://dynamic-website-hzu1.onrender.com');
+    process.exit(1);
+}
+
+const [pcId, authToken, serverUrl] = args;
+let isRunning = true;
+let heartbeatInterval = null;
+let lastHeartbeatSuccess = false;
+
+// Log file setup in current directory
+const logFile = path.join(process.cwd(), 'agent.log');
+const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
+function log(level, message) {
+    const timestamp = new Date().toISOString();
+    const logMessage = \`[\${timestamp}] [\${level}] [\${pcId}] \${message}\`;
+    console.log(logMessage);
+    logStream.write(logMessage + '\\n');
+}
+
+function makeRequest(url, data, callback) {
+    const isHttps = url.startsWith('https://');
+    const client = isHttps ? https : http;
+    const urlObj = new URL(url);
+    
+    const postData = JSON.stringify(data);
+    
+    const options = {
+        hostname: urlObj.hostname,
+        port: urlObj.port || (isHttps ? 443 : 80),
+        path: urlObj.pathname,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+            'User-Agent': \`PC-Agent/\${pcId}\`,
+            'Authorization': \`Bearer \${authToken}\`
+        }
+    };
+
+    const req = client.request(options, (res) => {
+        let responseData = '';
+        
+        res.on('data', (chunk) => {
+            responseData += chunk;
+        });
+        
+        res.on('end', () => {
+            try {
+                const parsedData = JSON.parse(responseData);
+                callback(null, res.statusCode, parsedData);
+            } catch (error) {
+                callback(error, res.statusCode, null);
+            }
+        });
+    });
+
+    req.on('error', (error) => {
+        callback(error, null, null);
+    });
+
+    req.on('timeout', () => {
+        req.destroy();
+        callback(new Error('Request timeout'), null, null);
+    });
+
+    req.setTimeout(10000); // 10 second timeout
+    req.write(postData);
+    req.end();
+}
+
+function sendHeartbeat() {
+    if (!isRunning) return;
+
+    const heartbeatData = {
+        pc_id: pcId,
+        timestamp: Date.now(),
+        status: 'ONLINE',
+        system_info: {
+            platform: process.platform,
+            arch: process.arch,
+            node_version: process.version,
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            last_heartbeat_success: lastHeartbeatSuccess,
+            hostname: os.hostname(),
+            cwd: process.cwd()
+        }
+    };
+
+    makeRequest(\`\${serverUrl}/api/heartbeat\`, heartbeatData, (error, statusCode, data) => {
+        if (error) {
+            log('ERROR', \`Heartbeat failed: \${error.message}\`);
+            lastHeartbeatSuccess = false;
+        } else if (statusCode === 200) {
+            log('INFO', \`💓 Heartbeat successful: \${data.message || 'OK'}\`);
+            lastHeartbeatSuccess = true;
+        } else if (statusCode === 401) {
+            log('ERROR', '❌ Authentication failed - invalid pc_id or auth_token');
+            log('ERROR', 'Please check your credentials and restart agent');
+            isRunning = false;
+        } else {
+            log('ERROR', \`❌ Heartbeat failed with status \${statusCode}: \${JSON.stringify(data)}\`);
+            lastHeartbeatSuccess = false;
+        }
+    });
+}
+
+function registerAgent() {
+    const registerData = {
+        pc_id: pcId,
+        auth_token: authToken,
+        system_info: {
+            platform: process.platform,
+            arch: process.arch,
+            node_version: process.version,
+            hostname: os.hostname(),
+            cwd: process.cwd()
+        }
+    };
+
+    makeRequest(\`\${serverUrl}/api/register-agent\`, registerData, (error, statusCode, data) => {
+        if (error) {
+            log('ERROR', \`❌ Registration failed: \${error.message}\`);
+            log('ERROR', 'Please check server URL and network connection');
+            process.exit(1);
+        } else if (statusCode === 200) {
+            log('INFO', \`✅ Agent registered successfully: \${data.message}\`);
+            log('INFO', \`🚀 Starting heartbeat every 3 seconds...\`);
+            
+            // Start heartbeat interval
+            heartbeatInterval = setInterval(sendHeartbeat, 3000);
+            
+            // Send first heartbeat immediately
+            sendHeartbeat();
+        } else {
+            log('ERROR', \`❌ Registration failed with status \${statusCode}: \${JSON.stringify(data)}\`);
+            process.exit(1);
+        }
+    });
+}
+
+function shutdown() {
+    log('INFO', '🛑 Shutting down agent...');
+    isRunning = false;
+    
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+    
+    // Send offline status
+    const offlineData = {
+        pc_id: pcId,
+        timestamp: Date.now(),
+        status: 'OFFLINE',
+        shutdown_reason: 'Agent stopped'
+    };
+
+    makeRequest(\`\${serverUrl}/api/heartbeat\`, offlineData, () => {
+        log('INFO', '✅ Agent shutdown complete');
+        logStream.end();
+        process.exit(0);
+    });
+}
+
+// Handle process termination
+process.on('SIGINT', () => {
+    log('INFO', '📡 Received SIGINT (Ctrl+C)');
+    shutdown();
+});
+
+process.on('SIGTERM', () => {
+    log('INFO', '📡 Received SIGTERM');
+    shutdown();
+});
+
+process.on('uncaughtException', (error) => {
+    log('ERROR', \`💥 Uncaught exception: \${error.message}\`);
+    log('ERROR', error.stack);
+    shutdown();
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    log('ERROR', \`💥 Unhandled rejection at \${promise}: \${reason}\`);
+    shutdown();
+});
+
+// Start agent
+log('INFO', '🚀 Starting PC Agent...');
+log('INFO', \`📍 Working Directory: \${process.cwd()}\`);
+log('INFO', \`🆔 PC ID: \${pcId}\`);
+log('INFO', \`🌐 Server: \${serverUrl}\`);
+log('INFO', \`💻 Platform: \${process.platform} \${process.arch}\`);
+log('INFO', \`📦 Node.js: \${process.version}\`);
+log('INFO', \`🖥️ Hostname: \${os.hostname()}\`);
+
+registerAgent();`;
+            
+            res.send(agentCode);
+        }
+        
+    } catch (error) {
+        console.error('Agent download error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to download agent',
+            code: 'DOWNLOAD_ERROR'
+        });
+    }
+});
 
 module.exports = router;
