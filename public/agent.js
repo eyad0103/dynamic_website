@@ -1,5 +1,16 @@
-// Downloadable agent.js - Real PC Agent
-// Usage: node agent.js <pc_id> <auth_token> <server_url>
+#!/usr/bin/env node
+
+/**
+ * AUTOMATED PC AGENT - Real-time PC monitoring
+ * 
+ * Usage: node agent.js <pc_id> <auth_token> <server_url>
+ * 
+ * This agent:
+ * - Authenticates with server using pc_id + auth_token
+ * - Sends heartbeat every 3 seconds
+ * - Logs errors locally
+ * - Updates PC status to ONLINE after first successful heartbeat
+ */
 
 const https = require('https');
 const http = require('http');
@@ -20,6 +31,7 @@ const [pcId, authToken, serverUrl] = args;
 let isRunning = true;
 let heartbeatInterval = null;
 let lastHeartbeatSuccess = false;
+let firstHeartbeatSent = false;
 
 // Log file setup in current directory
 const logFile = path.join(process.cwd(), 'agent.log');
@@ -87,10 +99,11 @@ function sendHeartbeat() {
     if (!isRunning) return;
 
     const heartbeatData = {
-        pc_id: pcId,
+        pcId: pcId,
+        authToken: authToken,
         timestamp: Date.now(),
         status: 'ONLINE',
-        system_info: {
+        systemInfo: {
             platform: process.platform,
             arch: process.arch,
             node_version: process.version,
@@ -98,16 +111,25 @@ function sendHeartbeat() {
             memory: process.memoryUsage(),
             last_heartbeat_success: lastHeartbeatSuccess,
             hostname: os.hostname(),
-            cwd: process.cwd()
+            cwd: process.cwd(),
+            cpus: os.cpus().length,
+            total_memory: os.totalmem(),
+            free_memory: os.freemem(),
+            load_average: os.loadavg()
         }
     };
 
     makeRequest(`${serverUrl}/api/heartbeat`, heartbeatData, (error, statusCode, data) => {
         if (error) {
-            log('ERROR', `Heartbeat failed: ${error.message}`);
+            log('ERROR', `💓 Heartbeat failed: ${error.message}`);
             lastHeartbeatSuccess = false;
         } else if (statusCode === 200) {
-            log('INFO', `💓 Heartbeat successful: ${data.message || 'OK'}`);
+            if (!firstHeartbeatSent) {
+                log('INFO', `✅ FIRST HEARTBEAT SUCCESSFUL - PC is now ONLINE`);
+                firstHeartbeatSent = true;
+            } else {
+                log('INFO', `💓 Heartbeat successful: ${data.message || 'OK'}`);
+            }
             lastHeartbeatSuccess = true;
         } else if (statusCode === 401) {
             log('ERROR', '❌ Authentication failed - invalid pc_id or auth_token');
@@ -120,38 +142,14 @@ function sendHeartbeat() {
     });
 }
 
-function registerAgent() {
-    const registerData = {
-        pc_id: pcId,
-        auth_token: authToken,
-        system_info: {
-            platform: process.platform,
-            arch: process.arch,
-            node_version: process.version,
-            hostname: os.hostname(),
-            cwd: process.cwd()
-        }
-    };
-
-    makeRequest(`${serverUrl}/api/register-agent`, registerData, (error, statusCode, data) => {
-        if (error) {
-            log('ERROR', `❌ Registration failed: ${error.message}`);
-            log('ERROR', 'Please check server URL and network connection');
-            process.exit(1);
-        } else if (statusCode === 200) {
-            log('INFO', `✅ Agent registered successfully: ${data.message}`);
-            log('INFO', `🚀 Starting heartbeat every 3 seconds...`);
-            
-            // Start heartbeat interval
-            heartbeatInterval = setInterval(sendHeartbeat, 3000);
-            
-            // Send first heartbeat immediately
-            sendHeartbeat();
-        } else {
-            log('ERROR', `❌ Registration failed with status ${statusCode}: ${JSON.stringify(data)}`);
-            process.exit(1);
-        }
-    });
+function startHeartbeat() {
+    log('INFO', `🚀 Starting heartbeat every 3 seconds...`);
+    
+    // Start heartbeat interval
+    heartbeatInterval = setInterval(sendHeartbeat, 3000);
+    
+    // Send first heartbeat immediately
+    sendHeartbeat();
 }
 
 function shutdown() {
@@ -164,7 +162,8 @@ function shutdown() {
     
     // Send offline status
     const offlineData = {
-        pc_id: pcId,
+        pcId: pcId,
+        authToken: authToken,
         timestamp: Date.now(),
         status: 'OFFLINE',
         shutdown_reason: 'Agent stopped'
@@ -200,12 +199,16 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Start agent
-log('INFO', '🚀 Starting PC Agent...');
+log('INFO', '🚀 Starting Automated PC Agent...');
 log('INFO', `📍 Working Directory: ${process.cwd()}`);
 log('INFO', `🆔 PC ID: ${pcId}`);
 log('INFO', `🌐 Server: ${serverUrl}`);
 log('INFO', `💻 Platform: ${process.platform} ${process.arch}`);
 log('INFO', `📦 Node.js: ${process.version}`);
 log('INFO', `🖥️ Hostname: ${os.hostname()}`);
+log('INFO', `🧠 CPUs: ${os.cpus().length}`);
+log('INFO', `💾 Total Memory: ${Math.round(os.totalmem() / 1024 / 1024)}MB`);
+log('INFO', `💾 Free Memory: ${Math.round(os.freemem() / 1024 / 1024)}MB`);
 
-registerAgent();
+// Start heartbeat immediately (no registration needed for automated system)
+startHeartbeat();
