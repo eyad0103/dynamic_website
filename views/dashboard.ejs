@@ -1431,12 +1431,13 @@
 
                 <!-- API Keys Tab -->
                 <div id="api-tab" class="tab-content">
+                    <!-- API Status Display -->
                     <div class="api-status" id="apiStatus">
                         <i class="fas fa-info-circle"></i>
-                        <span id="apiStatusText">Ready to run agent automatically</span>
+                        <span id="apiStatusText">Checking API key status...</span>
                     </div>
                     
-                    <!-- API Key Management Only -->
+                    <!-- API Key Management -->
                     <div style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05)); border: 2px solid #00ff88; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
                         <h3 style="color: #00ff88; text-align: center; margin-bottom: 1rem;">
                             🔑 API Key Management
@@ -1445,99 +1446,40 @@
                             Save your OpenRouter API key for persistent use across sessions
                         </p>
                         
-                        <form class="api-key-form" id="apiKeyForm">
+                        <form id="apiKeyForm">
                             <div class="form-group">
                                 <label class="form-label" for="apiKey" style="font-size: 1.1rem; font-weight: bold;">
                                     🔑 Your OpenRouter API Key
                                 </label>
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); saveApiKey(); }">
+                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;">
                                     <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
-                                        <i class="fas fa-copy"></i> Copy
+                                        <i class="fas fa-copy"></i>
                                     </button>
                                 </div>
                                 <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on the server</small>
                             </div>
 
                             <div style="text-align: center; margin-top: 1.5rem;">
-                                <button type="button" class="form-button" onclick="saveApiKey()" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
+                                <button type="button" id="saveApiKeyBtn" class="form-button" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
                                     <i class="fas fa-save"></i> 💾 Save API Key
                                 </button>
                             </div>
                         </form>
                     </div>
                     
-                    <!-- Advanced Options (Collapsible) -->
-                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1.5rem;">
-                        <h4 style="color: #fff; margin-bottom: 1rem; cursor: pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                            ⚙️ Advanced Options <small style="opacity: 0.7;">(click to expand)</small>
-                        </h4>
-                        <div style="display: none;">
-                            <div class="form-group">
-                                <label class="form-label" for="testPrompt">Test Prompt</label>
-                                <textarea id="testPrompt" class="form-input form-textarea" placeholder="Enter a test prompt to verify API connectivity...">Hello, can you confirm this API key is working correctly?</textarea>
-                            </div>
-
-                            <div style="display: flex; gap: 1rem;">
-                                <button type="button" class="form-button" onclick="testApiKey()">
-                                    <i class="fas fa-flask"></i> Test API
-                                </button>
-                                <button type="button" class="form-button" onclick="saveApiKey()">
-                                    <i class="fas fa-save"></i> Save Key
-                                </button>
-                            </div>
-
-                            <div id="testResult" style="display: none;"></div>
-                        </div>
-                    </div>
-                    
                     <!-- Instructions -->
-                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
-                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">📋 Instructions</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
-                            <strong>API Key Tab:</strong> Only manages your OpenRouter API key<br>
-                            <strong>Create PC Tab:</strong> Create PCs and connect agents<br>
-                            <strong>Registered PCs Tab:</strong> Monitor PC status in real-time
-                        </p>
-                    </div>
-
-                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
-                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">Generated Agent Code</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
-                            <strong>✅ API Key Automatically Included!</strong><br>
-                            Your generated code already contains your configured API key. Just copy and paste it into your target PC's HTML file.
-                        </p>
-                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
-                            <h5 style="color: #00ff88; margin-bottom: 0.5rem; font-size: 0.9rem;">📋 Simple Instructions</h5>
-                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin: 0;">
-                                1. Click "Copy Code" button below<br>
-                                2. Paste at the end of your target HTML file (before &lt;/body&gt;)<br>
-                                3. Save and open the HTML file in browser<br>
-                                4. Check your dashboard for PC registration
-                            </p>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
-                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">API Configuration Instructions</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
-                            1. Enter your OpenRouter API key above<br>
-                            2. Click "Test API" to verify connectivity<br>
-                            3. Click "Save Key" to store it securely<br>
-                            4. Click "Copy" to copy the key for error tracking agents<br>
-                            5. The system will automatically use this key for error analysis
-                        </p>
-                        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border-radius: 4px;">
-                            <h5 style="color: #00ff88; margin-bottom: 0.5rem; font-size: 0.9rem;">📋 Quick Copy for Error Agents</h5>
-                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; margin: 0;">
-                                Click the "Copy" button above to copy your API key, then use it in your error tracking agent code:
-                            </p>
-                            <pre style="background: rgba(0, 0, 0, 0.5); padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; color: #00ff88; margin: 0.5rem 0;">
-startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR-API-KEY');</pre>
-                        </div>
+                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1.5rem;">
+                        <h4 style="color: #00ff88; margin-bottom: 1rem;">📋 Setup Instructions</h4>
+                        <ol style="color: rgba(255, 255, 255, 0.9); line-height: 1.6; padding-left: 1.5rem;">
+                            <li style="margin-bottom: 0.5rem;">Get your OpenRouter API key from <a href="https://openrouter.ai/keys" target="_blank" style="color: #00ff88;">openrouter.ai/keys</a></li>
+                            <li style="margin-bottom: 0.5rem;">Copy the key (starts with "sk-or-v1-")</li>
+                            <li style="margin-bottom: 0.5rem;">Paste it in the field above and click "Save API Key"</li>
+                            <li style="margin-bottom: 0.5rem;">Your key will be stored securely and persist across sessions</li>
+                        </ol>
                     </div>
                 </div>
 
@@ -3082,6 +3024,36 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             // Check API status
             checkApiStatus();
             
+            // Load saved API key
+            loadApiKey();
+            
+            // Set up API key event listeners
+            const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+            const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+            const copyApiKeyBtn = document.getElementById('copyApiKeyBtn');
+            const apiKeyInput = document.getElementById('apiKey');
+            
+            if (saveApiKeyBtn) {
+                saveApiKeyBtn.addEventListener('click', saveApiKey);
+            }
+            
+            if (toggleApiKeyBtn) {
+                toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
+            }
+            
+            if (copyApiKeyBtn) {
+                copyApiKeyBtn.addEventListener('click', copyApiKey);
+            }
+            
+            if (apiKeyInput) {
+                apiKeyInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveApiKey();
+                    }
+                });
+            }
+            
             // Auto-refresh every 30 seconds
             setInterval(loadErrors, 30000);
             
@@ -3158,18 +3130,6 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
             const refreshPcsBtn = document.getElementById('refreshPcsBtn');
             const copyAgentCodeBtn = document.getElementById('copyAgentCodeBtn');
             const downloadAgentBtn = document.getElementById('downloadAgentBtn');
-            
-            // API Key functionality
-            const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
-            const copyApiKeyBtn = document.getElementById('copyApiKeyBtn');
-            
-            if (toggleApiKeyBtn) {
-                toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
-            }
-            
-            if (copyApiKeyBtn) {
-                copyApiKeyBtn.addEventListener('click', copyApiKey);
-            }
             
             if (createPcBtn) {
                 createPcBtn.addEventListener('click', createPcAgent);
