@@ -611,41 +611,6 @@ router.get('/api/stats', (req, res) => {
     }
 });
 
-// PHASE 2 - API KEY STATUS (PERSISTENT & BLOCKING)
-// Load API key on page load
-router.get('/api/api-key-status', (req, res) => {
-    try {
-        const apiKeys = loadApiKeys();
-        
-        if (!apiKeys || Object.keys(apiKeys).length === 0) {
-            return res.json({
-                success: true,
-                configured: false,
-                apiKey: null,
-                message: 'API key not configured'
-            });
-        }
-        
-        const apiKey = Object.keys(apiKeys)[0];
-        const isValid = validateApiKey(apiKey);
-        
-        res.json({
-            success: true,
-            configured: true,
-            apiKey: apiKey,
-            isValid: isValid,
-            message: isValid ? 'API key configured' : 'Invalid API key format'
-        });
-        
-    } catch (error) {
-        console.error('❌ Error checking API key status:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to check API key status: ' + error.message
-        });
-    }
-});
-
 // PHASE 9 - DEBUG LOGGING (MANDATORY)
 // Comprehensive logging system for all critical events
 
