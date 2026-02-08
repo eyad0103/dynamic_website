@@ -1434,7 +1434,7 @@
                     <!-- API Status Display -->
                     <div class="api-status" id="apiStatus">
                         <i class="fas fa-info-circle"></i>
-                        <span id="apiStatusText">Checking API key status...</span>
+                        <span id="apiStatusText">Ready to configure API key</span>
                     </div>
                     
                     <!-- API Key Management -->
@@ -1443,32 +1443,30 @@
                             🔑 API Key Management
                         </h3>
                         <p style="color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 1.5rem; font-size: 1.1rem;">
-                            Save your OpenRouter API key for persistent use across sessions
+                            Save your OpenRouter API key for persistent use
                         </p>
                         
-                        <form id="apiKeyForm">
-                            <div class="form-group">
-                                <label class="form-label" for="apiKey" style="font-size: 1.1rem; font-weight: bold;">
-                                    🔑 Your OpenRouter API Key
-                                </label>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;">
-                                    <button type="button" id="toggleApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button type="button" id="copyApiKeyBtn" class="form-button" style="padding: 0.75rem 1rem;">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on the server</small>
-                            </div>
-
-                            <div style="text-align: center; margin-top: 1.5rem;">
-                                <button type="button" id="saveApiKeyBtn" class="form-button" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
-                                    <i class="fas fa-save"></i> 💾 Save API Key
+                        <div class="form-group">
+                            <label class="form-label" for="apiKeyInput" style="font-size: 1.1rem; font-weight: bold;">
+                                🔑 Your OpenRouter API Key
+                            </label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                <input type="password" id="apiKeyInput" class="form-input" placeholder="sk-or-v1-..." style="flex: 1; font-size: 1rem; padding: 0.75rem;">
+                                <button type="button" onclick="toggleApiKeyVisibility()" class="form-button" style="padding: 0.75rem 1rem;">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                                <button type="button" onclick="copyApiKey()" class="form-button" style="padding: 0.75rem 1rem;">
+                                    <i class="fas fa-copy"></i>
                                 </button>
                             </div>
-                        </form>
+                            <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on the server</small>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 1.5rem;">
+                            <button type="button" onclick="saveApiKey()" class="form-button" style="background: #00ff88; color: #000; font-size: 1.2rem; padding: 1rem 2rem; font-weight: bold; border-radius: 8px; min-width: 200px;">
+                                <i class="fas fa-save"></i> 💾 Save API Key
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Instructions -->
@@ -1481,6 +1479,123 @@
                             <li style="margin-bottom: 0.5rem;">Your key will be stored securely and persist across sessions</li>
                         </ol>
                     </div>
+                    
+                    <!-- Inline JavaScript for API Key Tab -->
+                    <script>
+                        // Simple API Key Functions
+                        function toggleApiKeyVisibility() {
+                            const input = document.getElementById('apiKeyInput');
+                            const icon = document.getElementById('toggleIcon');
+                            
+                            if (input.type === 'password') {
+                                input.type = 'text';
+                                icon.className = 'fas fa-eye-slash';
+                            } else {
+                                input.type = 'password';
+                                icon.className = 'fas fa-eye';
+                            }
+                        }
+                        
+                        function copyApiKey() {
+                            const input = document.getElementById('apiKeyInput');
+                            const apiKey = input.value;
+                            
+                            if (!apiKey) {
+                                alert('Please enter an API key first');
+                                return;
+                            }
+                            
+                            navigator.clipboard.writeText(apiKey).then(() => {
+                                alert('API key copied to clipboard!');
+                            }).catch(err => {
+                                input.select();
+                                document.execCommand('copy');
+                                alert('API key copied to clipboard!');
+                            });
+                        }
+                        
+                        async function saveApiKey() {
+                            const input = document.getElementById('apiKeyInput');
+                            const apiKey = input.value.trim();
+                            const statusDiv = document.getElementById('apiStatus');
+                            const statusText = document.getElementById('apiStatusText');
+                            
+                            if (!apiKey) {
+                                alert('Please enter an API key');
+                                return;
+                            }
+                            
+                            if (!apiKey.startsWith('sk-or-v1-')) {
+                                alert('Invalid API key format. Key should start with "sk-or-v1-"');
+                                return;
+                            }
+                            
+                            // Update status
+                            statusDiv.className = 'api-status status-testing';
+                            statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving API key...';
+                            
+                            try {
+                                const response = await fetch('/api/save-api-key', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ apiKey: apiKey })
+                                });
+                                
+                                const data = await response.json();
+                                
+                                if (data.success) {
+                                    statusDiv.className = 'api-status status-configured';
+                                    statusText.innerHTML = '<i class="fas fa-check-circle"></i> API key saved successfully!';
+                                    alert('API key saved successfully!');
+                                } else {
+                                    throw new Error(data.error || 'Failed to save API key');
+                                }
+                                
+                            } catch (error) {
+                                statusDiv.className = 'api-status status-not-configured';
+                                statusText.innerHTML = '<i class="fas fa-times-circle"></i> Failed to save API key';
+                                alert('Error saving API key: ' + error.message);
+                            }
+                        }
+                        
+                        async function loadApiKey() {
+                            try {
+                                const response = await fetch('/api/get-api-key');
+                                const data = await response.json();
+                                
+                                if (data.success && data.apiKey) {
+                                    document.getElementById('apiKeyInput').value = data.apiKey;
+                                    updateApiStatus(true);
+                                } else {
+                                    updateApiStatus(false);
+                                }
+                            } catch (error) {
+                                console.error('Failed to load API key:', error);
+                                updateApiStatus(false);
+                            }
+                        }
+                        
+                        function updateApiStatus(configured) {
+                            const statusDiv = document.getElementById('apiStatus');
+                            const statusText = document.getElementById('apiStatusText');
+                            
+                            if (configured) {
+                                statusDiv.className = 'api-status status-configured';
+                                statusText.innerHTML = '<i class="fas fa-check-circle"></i> API key configured';
+                            } else {
+                                statusDiv.className = 'api-status status-not-configured';
+                                statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API key not configured';
+                            }
+                        }
+                        
+                        // Load API key when tab is shown
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Load API key after a short delay
+                            setTimeout(loadApiKey, 500);
+                        });
+                    </script>
                 </div>
 
                 <!-- Version Tab -->
@@ -3182,7 +3297,6 @@
         loadPcList();
     });
     </script>
-    <script src="/api-key-functions.js"></script>
     <script src="/notification-system.js"></script>
     <script src="/unified-frontend.js"></script>
 </body>
