@@ -643,7 +643,7 @@ function switchTabWithAutoRefresh(tabName, event) {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Load saved API key
-    loadSavedApiKey();
+    loadApiKey();
     
     // Add event listeners
     const apiKeyInput = document.getElementById('apiKey');
@@ -652,6 +652,62 @@ document.addEventListener('DOMContentLoaded', function() {
             const instructionDiv = document.getElementById('instructionDiv');
             if (instructionDiv) {
                 instructionDiv.style.display = 'none';
+            }
+        });
+    }
+    
+    // Add API key button event listeners
+    const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+    const copyApiKeyBtn = document.getElementById('copyApiKeyBtn');
+    const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+    
+    if (toggleApiKeyBtn) {
+        toggleApiKeyBtn.addEventListener('click', function() {
+            const input = document.getElementById('apiKey');
+            const icon = toggleApiKeyBtn.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        });
+    }
+    
+    if (copyApiKeyBtn) {
+        copyApiKeyBtn.addEventListener('click', function() {
+            const input = document.getElementById('apiKey');
+            const apiKey = input.value;
+            
+            if (!apiKey) {
+                showNotification('error', '❌ Copy Failed', 'No API key to copy');
+                return;
+            }
+            
+            navigator.clipboard.writeText(apiKey).then(() => {
+                showNotification('success', '✅ API Key Copied', 'API key copied to clipboard');
+            }).catch(err => {
+                input.select();
+                document.execCommand('copy');
+                showNotification('success', '✅ API Key Copied', 'API key copied to clipboard');
+            });
+        });
+    }
+    
+    if (saveApiKeyBtn) {
+        saveApiKeyBtn.addEventListener('click', function() {
+            saveApiKey();
+        });
+    }
+    
+    // Add Enter key support for API key input
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveApiKey();
             }
         });
     }
