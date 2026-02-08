@@ -154,8 +154,8 @@ const posts = [
 
 // Routes
 app.get('/', (req, res) => {
-    res.render('dashboard-fixed', { 
-        title: 'PC Monitoring System - Phase 1',
+    res.render('dashboard', { 
+        title: 'System Dashboard',
         serverStatus: 'ONLINE',
         serverUptime: systemBaseline.getUptimeFormatted(),
         serverTime: new Date().toISOString(),

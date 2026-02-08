@@ -2065,7 +2065,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                             const maskedKeyDiv = document.createElement('div');
                             maskedKeyDiv.style.cssText = 'color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;';
                             maskedKeyDiv.textContent = 'Key: ' + data.maskedKey;
-                            apiStatus.appendChild(maskedKeyDiv);
+                            // Clear existing masked keys first\n                            const existingMaskedKeys = apiStatus.querySelectorAll('div');\n                            existingMaskedKeys.forEach(div => div.remove());\n                            apiStatus.appendChild(maskedKeyDiv);
                         }
                         
                         showNotification('success', 'API Key Active', 'OpenRouter API key is configured and ready for error analysis');
@@ -2371,7 +2371,7 @@ startErrorTracking('PC-Name', 'https://dynamic-website-hzu1.onrender.com', 'YOUR
                             const maskedKeyDiv = document.createElement('div');
                             maskedKeyDiv.style.cssText = 'color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;';
                             maskedKeyDiv.textContent = 'Key: ' + data.maskedKey;
-                            apiStatus.appendChild(maskedKeyDiv);
+                            // Clear existing masked keys first\n                            const existingMaskedKeys = apiStatus.querySelectorAll('div');\n                            existingMaskedKeys.forEach(div => div.remove());\n                            apiStatus.appendChild(maskedKeyDiv);
                         }
                         
                         showNotification('success', 'API Key Active', 'OpenRouter API key is configured and ready for error analysis');
