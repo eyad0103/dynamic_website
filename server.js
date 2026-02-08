@@ -154,8 +154,8 @@ const posts = [
 
 // Routes
 app.get('/', (req, res) => {
-    res.render('dashboard', { 
-        title: 'System Dashboard',
+    res.render('dashboard-fixed', { 
+        title: 'PC Monitoring System - Phase 1',
         serverStatus: 'ONLINE',
         serverUptime: systemBaseline.getUptimeFormatted(),
         serverTime: new Date().toISOString(),
@@ -448,73 +448,6 @@ app.post('/api/test-api-key', async (req, res) => {
             error: error.message
         });
     }
-});
-
-app.post('/api/save-api-key', async (req, res) => {
-    const { apiKey } = req.body;
-    
-    if (!apiKey) {
-        return res.status(400).json({
-            success: false,
-            error: 'API key is required'
-        });
-    }
-    
-    try {
-        // Test the API key first
-        const testResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://dynamic-website-hzu1.onrender.com',
-                'X-Title': 'API Key Validation'
-            },
-            body: JSON.stringify({
-                model: 'anthropic/claude-3-haiku',
-                messages: [
-                    {
-                        role: 'user',
-                        content: 'API key validation test'
-                    }
-                ],
-                max_tokens: 100,
-                temperature: 0.7
-            })
-        });
-        
-        if (!testResponse.ok) {
-            throw new Error(`API key validation failed: ${testResponse.statusText}`);
-        }
-        
-        // Store the API key in environment (in production, this would be stored securely)
-        process.env.OPENROUTER_API_KEY = apiKey;
-        
-        res.json({
-            success: true,
-            message: 'API key saved and validated successfully'
-        });
-        
-    } catch (error) {
-        console.error('API key save failed:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// Get API key status
-app.get('/api/api-key-status', (req, res) => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    
-    console.log('🔑 API Key Status Check - Key exists:', !!apiKey);
-    
-    res.json({
-        success: true,
-        configured: !!apiKey,
-        maskedKey: apiKey ? apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4) : null
-    });
 });
 
 // Simple test endpoint

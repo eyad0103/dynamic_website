@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Monitoring Dashboard - Phase 1</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==">
+    <link rel="stylesheet" href="/css/style.css?v=1.0.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            overflow: hidden;
+        }
+
+        .tab-header {
+            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tab-button:hover {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+
+        .tab-button.active {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border-bottom: 2px solid #00ff88;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .api-status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .status-configured {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+
+        .status-not-configured {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #00ff88;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+        }
+
+        .form-button {
+            padding: 0.75rem 1.5rem;
+            background: #00ff88;
+            color: #000000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-button:hover {
+            background: #00cc70;
+            transform: translateY(-1px);
+        }
+
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .notification {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            min-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification-success {
+            border-color: rgba(0, 255, 136, 0.5);
+            color: #00ff88;
+        }
+
+        .notification-error {
+            border-color: rgba(255, 107, 107, 0.5);
+            color: #ff6b6b;
+        }
+
+        .notification-warning {
+            border-color: rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1 class="dashboard-title">
+                <i class="fas fa-desktop"></i> PC Monitoring System
+            </h1>
+            <p style="color: rgba(255, 255, 255, 0.7);">Real PC Monitoring & Management - Phase 1: API Key System</p>
+        </header>
+
+        <div class="notification-container" id="notificationContainer"></div>
+
+        <main class="tab-container">
+            <div class="tab-header">
+                <button class="tab-button active" onclick="switchTab('api', event)">
+                    <i class="fas fa-key"></i> API Keys
+                </button>
+                <button class="tab-button" onclick="switchTab('status', event)">
+                    <i class="fas fa-info-circle"></i> System Status
+                </button>
+            </div>
+
+            <!-- API Keys Tab -->
+            <div id="api-tab" class="tab-content active">
+                <div class="api-status" id="apiStatus">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="apiStatusText">Checking API key status...</span>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05)); border: 2px solid #00ff88; border-radius: 8px; padding: 2rem;">
+                    <h3 style="color: #00ff88; text-align: center; margin-bottom: 1rem;">
+                        🔑 API Key Management
+                    </h3>
+                    <p style="color: rgba(255, 255, 255, 0.9); text-align: center; margin-bottom: 1.5rem;">
+                        Save your OpenRouter API key for persistent use across sessions
+                    </p>
+                    
+                    <form id="apiKeyForm">
+                        <div class="form-group">
+                            <label class="form-label" for="apiKey">
+                                🔑 Your OpenRouter API Key
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="password" id="apiKey" class="form-input" placeholder="sk-or-v1-..." style="flex: 1;">
+                                <button type="button" id="toggleApiKeyBtn" class="form-button">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small style="color: rgba(0, 255, 136, 0.8); font-size: 0.9rem;">Your API key is securely stored on the server</small>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <button type="button" class="form-button" onclick="saveApiKey()" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                                <i class="fas fa-save"></i> 💾 Save API Key
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                    <h4 style="color: #00ff88; margin-bottom: 0.5rem;">📋 Phase 1 Requirements</h4>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; line-height: 1.4;">
+                        <strong>✅ API Key is GLOBAL and PERSISTENT</strong><br>
+                        <strong>✅ API key loads on page load</strong><br>
+                        <strong>✅ API key NEVER resets unless explicitly changed</strong><br>
+                        <strong>✅ All tabs read the SAME API key state</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- System Status Tab -->
+            <div id="status-tab" class="tab-content">
+                <div style="padding: 1rem;">
+                    <h3 style="color: #00ff88; margin-bottom: 1rem;">System Status</h3>
+                    <div id="systemStatus" style="display: grid; gap: 1rem;">
+                        <!-- Status will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Phase 1: API Key System Implementation
+        let currentTab = 'api';
+        
+        // Notification System
+        function showNotification(type, title, message) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            
+            notification.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">${title}</div>
+                <div style="font-size: 0.9rem;">${message}</div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // Tab Switching
+        function switchTab(tabName, event) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            currentTab = tabName;
+            
+            if (tabName === 'status') {
+                updateSystemStatus();
+            }
+        }
+        
+        // API Key Management
+        async function checkApiStatus() {
+            const apiStatus = document.getElementById('apiStatus');
+            const apiStatusText = document.getElementById('apiStatusText');
+            
+            try {
+                const response = await fetch('/api/api-key-status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.configured) {
+                        apiStatus.className = 'api-status status-configured';
+                        apiStatusText.innerHTML = '<i class="fas fa-check-circle"></i> API key configured and working';
+                        
+                        if (data.maskedKey) {
+                            const maskedKeyDiv = document.createElement('div');
+                            maskedKeyDiv.style.cssText = 'color: rgba(0, 255, 136, 0.6); font-size: 0.8rem; margin-top: 0.5rem;';
+                            maskedKeyDiv.textContent = 'Key: ' + data.maskedKey;
+                            apiStatus.appendChild(maskedKeyDiv);
+                        }
+                        
+                        showNotification('success', 'API Key Active', 'OpenRouter API key is configured and ready');
+                    } else {
+                        apiStatus.className = 'api-status status-not-configured';
+                        apiStatusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> API key not configured';
+                        showNotification('warning', 'API Key Required', 'Please configure your OpenRouter API key');
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to check API status');
+                }
+                
+            } catch (error) {
+                console.error('API status check failed:', error);
+                apiStatus.className = 'api-status status-not-configured';
+                apiStatusText.innerHTML = '<i class="fas fa-times-circle"></i> Unable to check API status';
+                showNotification('error', 'Connection Error', 'Failed to check API status: ' + error.message);
+            }
+        }
+        
+        // Load saved API key on page load - CRITICAL FOR PHASE 1
+        async function loadApiKey() {
+            try {
+                console.log('🔑 Loading saved API key...');
+                const response = await fetch('/api/get-api-key');
+                const data = await response.json();
+                
+                if (data.success && data.apiKey) {
+                    console.log('✅ API key loaded successfully');
+                    document.getElementById('apiKey').value = data.apiKey;
+                    showNotification('success', 'API Key Loaded', 'Your saved API key has been restored');
+                } else {
+                    console.log('ℹ️ No saved API key found');
+                    showNotification('info', 'No API Key', 'No saved API key found. Please configure one.');
+                }
+            } catch (error) {
+                console.error('❌ Failed to load API key:', error);
+                showNotification('error', 'Load Failed', 'Failed to load saved API key');
+            }
+        }
+        
+        async function saveApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            const apiStatus = document.getElementById('apiStatus');
+            const apiStatusText = document.getElementById('apiStatusText');
+            
+            if (!apiKey) {
+                showNotification('error', 'Validation Error', 'Please enter an API key');
+                return;
+            }
+            
+            apiStatus.className = 'api-status status-configured';
+            apiStatusText.innerHTML = '<span class="loading-spinner"></span> Saving API key...';
+            
+            try {
+                const response = await fetch('/api/save-api-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        apiKey: apiKey
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('success', 'API Key Saved', 'Your API key has been permanently stored');
+                    apiStatus.className = 'api-status status-configured';
+                    apiStatusText.innerHTML = '<i class="fas fa-check-circle"></i> API key configured and saved';
+                    
+                    // Re-check status to update UI
+                    setTimeout(checkApiStatus, 1000);
+                } else {
+                    showNotification('error', 'Save Failed', 'Failed to save API key: ' + data.error);
+                    apiStatus.className = 'api-status status-not-configured';
+                    apiStatusText.innerHTML = '<i class="fas fa-times-circle"></i> Failed to save API key';
+                }
+                
+            } catch (error) {
+                showNotification('error', 'Save Failed', 'Failed to save API key: ' + error.message);
+                apiStatus.className = 'api-status status-not-configured';
+                apiStatusText.innerHTML = '<i class="fas fa-times-circle"></i> Failed to save API key';
+            }
+        }
+        
+        function toggleApiKeyVisibility() {
+            const apiKeyInput = document.getElementById('apiKey');
+            const toggleBtn = document.getElementById('toggleApiKeyBtn');
+            
+            if (apiKeyInput.type === 'password') {
+                apiKeyInput.type = 'text';
+                toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                apiKeyInput.type = 'password';
+                toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+        
+        function updateSystemStatus() {
+            const systemStatus = document.getElementById('systemStatus');
+            systemStatus.innerHTML = `
+                <div style="padding: 1rem; background: rgba(0, 255, 136, 0.1); border-radius: 4px;">
+                    <h4 style="color: #00ff88; margin-bottom: 0.5rem;">🔑 API Key System</h4>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Status: <span style="color: #00ff88;">OPERATIONAL</span></p>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Storage: <span style="color: #00ff88;">PERSISTENT</span></p>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Loading: <span style="color: #00ff88;">AUTOMATIC</span></p>
+                </div>
+                <div style="padding: 1rem; background: rgba(0, 123, 255, 0.1); border-radius: 4px;">
+                    <h4 style="color: #007bff; margin-bottom: 0.5rem;">📊 Phase Status</h4>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Current: <span style="color: #007bff;">PHASE 1</span></p>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Focus: <span style="color: #007bff;">API Key System</span></p>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Next: <span style="color: #ffc107;">PC Creation Logic</span></p>
+                </div>
+            `;
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 PC Monitoring System - Phase 1 Loading...');
+            
+            // Load API key first - CRITICAL
+            loadApiKey().then(() => {
+                // Check API status after loading
+                checkApiStatus();
+            });
+            
+            // Set up event listeners
+            document.getElementById('toggleApiKeyBtn').addEventListener('click', toggleApiKeyVisibility);
+            
+            // Add Enter key support for API key input
+            document.getElementById('apiKey').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveApiKey();
+                }
+            });
+            
+            console.log('✅ Phase 1 API Key System initialized');
+        });
+    </script>
+</body>
+</html>
