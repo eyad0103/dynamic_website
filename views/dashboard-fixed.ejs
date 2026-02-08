@@ -141,6 +141,98 @@
             transform: translateY(-1px);
         }
 
+        .error-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .error-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .error-list-title {
+            color: #00ff88;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .error-filters {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-input {
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+            color: #ffffff;
+        }
+
+        .refresh-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid rgba(0, 255, 136, 0.5);
+            border-radius: 4px;
+            color: #00ff88;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .ai-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            align-self: flex-start;
+        }
+
+        .user-message {
+            background: rgba(0, 123, 255, 0.1);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .message-sender {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .user-message .message-sender {
+            color: #007bff;
+        }
+
+        .message-time {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.7rem;
+        }
+
+        .message-content {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+        }
+
         .notification-container {
             position: fixed;
             top: 20px;
@@ -198,16 +290,151 @@
 
         <main class="tab-container">
             <div class="tab-header">
-                <button class="tab-button active" onclick="switchTab('api', event)">
+                <button class="tab-button active" onclick="switchTab('errors', event)">
+                    <i class="fas fa-exclamation-triangle"></i> Errors
+                </button>
+                <button class="tab-button" onclick="switchTab('pcs', event)">
+                    <i class="fas fa-plus"></i> ➡️ CREATE PC
+                </button>
+                <button class="tab-button" onclick="switchTab('registered-pcs', event)">
+                    <i class="fas fa-desktop"></i> Registered PCs
+                </button>
+                <button class="tab-button" onclick="switchTab('api', event)">
                     <i class="fas fa-key"></i> API Keys
                 </button>
-                <button class="tab-button" onclick="switchTab('status', event)">
-                    <i class="fas fa-info-circle"></i> System Status
+                <button class="tab-button" onclick="switchTab('version', event)">
+                    <i class="fas fa-code-branch"></i> Version
+                </button>
+                <button class="tab-button" onclick="switchTab('chat', event)">
+                    <i class="fas fa-comments"></i> AI Chat
                 </button>
             </div>
 
+            <!-- Errors Tab -->
+            <div id="errors-tab" class="tab-content active">
+                <div class="error-list">
+                    <div class="error-list-header">
+                        <div class="error-list-title">Recent Errors</div>
+                        <div class="error-filters">
+                            <input type="text" id="searchInput" class="filter-input" placeholder="Search errors...">
+                            <button id="refreshBtn" class="refresh-btn">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div id="errorContainer">
+                        <div class="loading">Loading errors...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CREATE PC Tab -->
+            <div id="pcs-tab" class="tab-content">
+                <div class="error-list">
+                    <div class="error-list-header">
+                        <div class="error-list-title">PC Management</div>
+                        <div class="error-filters">
+                            <button id="refreshPcsBtn" class="refresh-btn">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 1rem;">
+                        <!-- Create New PC Agent Section -->
+                        <div style="margin-bottom: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                            <h4 style="color: #00ff88; margin-bottom: 1rem;">Create New PC Agent Package</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <input type="text" id="pcName" class="form-input" placeholder="PC Name (e.g., Office-PC, Laptop-01)">
+                                <input type="text" id="pcLocation" class="form-input" placeholder="Location (e.g., Office, Home)">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <input type="text" id="pcOwner" class="form-input" placeholder="Owner Name">
+                                <select id="pcType" class="form-input">
+                                    <option value="">Select PC Type</option>
+                                    <option value="desktop">Desktop</option>
+                                    <option value="laptop">Laptop</option>
+                                    <option value="server">Server</option>
+                                    <option value="workstation">Workstation</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <textarea id="pcDescription" class="form-input" placeholder="Description (optional)" rows="3"></textarea>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <button id="createPcBtn" class="form-button" onclick="createPC()">
+                                    <i class="fas fa-plus"></i> CREATE PC
+                                </button>
+                                <button id="connectAgentBtn" class="form-button" onclick="connectAgent()" style="background: #007bff;">
+                                    <i class="fas fa-link"></i> CONNECT AGENT
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- PC Status Overview -->
+                        <div id="pcStatusOverview" style="margin-bottom: 2rem;">
+                            <h4 style="color: #00ff88; margin-bottom: 1rem;">PC Status Overview</h4>
+                            <div id="pcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                                <!-- PC status cards will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <!-- PC List -->
+                        <div id="pcList">
+                            <h4 style="color: #00ff88; margin-bottom: 1rem;">Registered PCs</h4>
+                            <div id="pcTable" style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: rgba(0, 255, 136, 0.1);">
+                                            <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">PC Name</th>
+                                            <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Status</th>
+                                            <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Location</th>
+                                            <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Owner</th>
+                                            <th style="padding: 0.75rem; text-align: left; color: #00ff88; border-bottom: 1px solid rgba(0, 255, 136, 0.3);">Created At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pcTableBody">
+                                        <!-- PC rows will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registered PCs Tab -->
+            <div id="registered-pcs-tab" class="tab-content">
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="color: #00ff88; margin: 0;">🖥️ Registered PCs</h4>
+                        <button class="form-button" onclick="refreshPcList()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 1rem;">
+                        All PCs that have been registered and are actively reporting to your dashboard.
+                    </p>
+                </div>
+                
+                <!-- PC Status Overview Cards -->
+                <div id="registeredPcStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <!-- PC status cards will be populated here -->
+                </div>
+                
+                <!-- PC List Container -->
+                <div id="registeredPcsContainer" style="min-height: 400px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 1rem; border: 1px solid rgba(0, 255, 136, 0.2);">
+                    <!-- PC list will be populated here by JavaScript -->
+                    <div style="text-align: center; padding: 3rem; color: rgba(255, 255, 255, 0.6);">
+                        <i class="fas fa-desktop" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                        <h3>Loading PCs...</h3>
+                        <p>Fetching registered PCs from server</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- API Keys Tab -->
-            <div id="api-tab" class="tab-content active">
+            <div id="api-tab" class="tab-content">
                 <div class="api-status" id="apiStatus">
                     <i class="fas fa-info-circle"></i>
                     <span id="apiStatusText">Checking API key status...</span>
@@ -254,21 +481,72 @@
                 </div>
             </div>
 
-            <!-- System Status Tab -->
-            <div id="status-tab" class="tab-content">
+            <!-- Version Tab -->
+            <div id="version-tab" class="tab-content">
                 <div style="padding: 1rem;">
-                    <h3 style="color: #00ff88; margin-bottom: 1rem;">System Status</h3>
-                    <div id="systemStatus" style="display: grid; gap: 1rem;">
-                        <!-- Status will be populated here -->
+                    <h3 style="color: #00ff88; margin-bottom: 1rem;">System Version</h3>
+                    <div id="versionDetails" style="margin-top: 2rem; padding: 1rem; background: rgba(0, 255, 136, 0.05); border-radius: 4px; border-left: 3px solid #00ff88;">
+                        <h4 style="color: #00ff88; margin-bottom: 0.5rem;">System Details</h4>
+                        <div id="versionDetailsContent" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>📅 Last Updated:</strong> <span id="lastUpdated">Loading...</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>🔧 Features:</strong> AI Error Analysis, API Key Management, Notifications
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>🎯 Status:</strong> All systems operational
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>📊 Performance:</strong> <span id="performanceMetrics">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- AI Chat Tab -->
+            <div id="chat-tab" class="tab-content">
+                <div style="padding: 1rem;">
+                    <h3 style="color: #00ff88; margin-bottom: 1rem;">AI Assistant</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <input type="text" id="chatInput" class="form-input" placeholder="Ask about errors, debugging, or technical issues..." style="flex: 1;">
+                        <button id="sendMessageBtn" class="form-button">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                    
+                    <div id="chatContainer" style="height: 400px; overflow-y: auto; padding: 1rem; background: rgba(0, 0, 0, 0.5); border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3);">
+                        <div id="chatMessages" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="chat-message ai-message">
+                                <div class="message-header">
+                                    <div class="message-sender">AI Error Analysis Specialist</div>
+                                    <div class="message-time">Just now</div>
+                                </div>
+                                <div class="message-content">
+                                    Welcome! I'm your specialized AI Error Analysis Assistant. I can help you with:
+                                    <br><br>
+                                    • Thorough error analysis and debugging
+                                    <br>• Actionable fix suggestions
+                                    <br>• System architecture insights
+                                    <br>• Performance optimization recommendations
+                                    <br><br>
+                                    How can I help you today?
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
         </main>
     </div>
 
     <script>
         // Phase 1: API Key System Implementation
-        let currentTab = 'api';
+        let currentTab = 'errors';
+        let errors = [];
+        let filteredErrors = [];
         
         // Notification System
         function showNotification(type, title, message) {
@@ -301,17 +579,280 @@
             });
             
             // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
+            const targetTab = document.getElementById(tabName + '-tab');
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
             
             // Add active class to clicked button
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             
             currentTab = tabName;
             
-            if (tabName === 'status') {
-                updateSystemStatus();
+            // Tab-specific actions
+            if (tabName === 'api') {
+                checkApiStatus();
+            } else if (tabName === 'version') {
+                updateVersionDetails();
+            } else if (tabName === 'registered-pcs') {
+                setTimeout(() => {
+                    refreshPcList();
+                }, 1000);
+            }
+            
+            showNotification('info', 'Tab Switched', `Switched to ${tabName} tab`);
+        }
+        
+        // Error Management Functions
+        function loadErrors() {
+            return fetch('/api/errors')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        errors = data.errors || [];
+                        filteredErrors = errors;
+                        renderErrors();
+                        updateStats();
+                    } else {
+                        throw new Error(data.error || 'Failed to load errors');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading errors:', error);
+                    const errorContainer = document.getElementById('errorContainer');
+                    if (errorContainer) {
+                        errorContainer.innerHTML = '<div class="loading">Failed to load errors. Please try again.</div>';
+                    }
+                });
+        }
+        
+        function renderErrors() {
+            const errorContainer = document.getElementById('errorContainer');
+            if (!errorContainer) return;
+            
+            if (filteredErrors.length === 0) {
+                errorContainer.innerHTML = '<div class="loading">No errors found.</div>';
+                return;
+            }
+            
+            errorContainer.innerHTML = filteredErrors.map(error => `
+                <div class="error-item" data-id="${error.id}">
+                    <div class="error-header">
+                        <div class="error-app-name">${error.appName || 'Unknown'}</div>
+                        <div class="error-timestamp">${error.timestamp ? new Date(error.timestamp).toLocaleString() : 'Unknown'}</div>
+                    </div>
+                    <div class="error-status status-${error.status || 'pending'}">${error.status || 'Pending'}</div>
+                    <div class="error-message">${error.error || 'No message'}</div>
+                </div>
+            `).join('');
+        }
+        
+        function updateStats() {
+            // Stats will be updated when errors are loaded
+        }
+        
+        // PC Management Functions
+        function createPC() {
+            const pcName = document.getElementById('pcName').value;
+            const pcLocation = document.getElementById('pcLocation').value;
+            const pcOwner = document.getElementById('pcOwner').value;
+            const pcType = document.getElementById('pcType').value;
+            const pcDescription = document.getElementById('pcDescription').value;
+            
+            if (!pcName || !pcLocation || !pcOwner) {
+                showNotification('error', 'PC Creation Error', 'Please fill in all required fields');
+                return;
+            }
+            
+            showNotification('info', 'Creating PC', 'Generating PC credentials...');
+            
+            fetch('/api/create-pc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pcName,
+                    pcLocation,
+                    pcOwner,
+                    pcType,
+                    pcDescription
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('success', 'PC Created Successfully', `${pcName} created. Waiting for agent to connect...`);
+                    
+                    // Clear form
+                    document.getElementById('pcName').value = '';
+                    document.getElementById('pcLocation').value = '';
+                    document.getElementById('pcOwner').value = '';
+                    document.getElementById('pcType').value = '';
+                    document.getElementById('pcDescription').value = '';
+                    
+                    // Refresh PC list
+                    loadPcList();
+                } else {
+                    showNotification('error', 'PC Creation Failed', result.error || 'Unknown error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('PC creation error:', error);
+                showNotification('error', 'PC Creation Failed', 'Failed to create PC');
+            });
+        }
+        
+        function connectAgent() {
+            showNotification('info', 'Agent Connection', 'This feature will be available in Phase 2');
+        }
+        
+        function loadPcList() {
+            fetch('/api/pcs')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updatePcListDisplay(data.pcs || []);
+                    } else {
+                        showNotification('error', 'PC List Error', 'Failed to load PC list');
+                    }
+                })
+                .catch(error => {
+                    console.error('PC list error:', error);
+                    showNotification('error', 'PC List Error', 'Failed to load PC list');
+                });
+        }
+        
+        function updatePcListDisplay(pcs) {
+            const tbody = document.getElementById('pcTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (pcs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 2rem; text-align: center; color: rgba(255, 255, 255, 0.6);">No PCs created yet. Use CREATE PC tab to add your first PC.</td></tr>';
+                return;
+            }
+            
+            pcs.forEach(pc => {
+                const row = document.createElement('tr');
+                row.style.cssText = 'border-bottom: 1px solid rgba(0, 255, 136, 0.1);';
+                row.innerHTML = `
+                    <td style="padding: 0.75rem; color: #00ff88;">${pc.name || 'Unknown'}</td>
+                    <td style="padding: 0.75rem;">
+                        <span style="color: ${pc.status === 'ONLINE' ? '#28a745' : '#dc3545'};">
+                            ${pc.status || 'UNKNOWN'}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">${pc.location || 'Unknown'}</td>
+                    <td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">${pc.owner || 'Unknown'}</td>
+                    <td style="padding: 0.75rem; color: rgba(255, 255, 255, 0.6);">${pc.createdAt ? new Date(pc.createdAt).toLocaleString() : 'Unknown'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function refreshPcList() {
+            loadPcList();
+        }
+        
+        // Version Functions
+        function updateVersionDetails() {
+            const lastUpdated = document.getElementById('lastUpdated');
+            const performanceMetrics = document.getElementById('performanceMetrics');
+            
+            if (lastUpdated) {
+                lastUpdated.textContent = new Date().toLocaleString();
+            }
+            
+            if (performanceMetrics) {
+                performanceMetrics.textContent = 'Optimized and responsive';
             }
         }
+        
+        // Chat Functions
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const message = chatInput.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'chat-message user-message';
+            userMessage.innerHTML = `
+                <div class="message-header">
+                    <div class="message-sender">You</div>
+                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+                <div class="message-content">${message}</div>
+            `;
+            chatMessages.appendChild(userMessage);
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Scroll to bottom
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // Send to AI (placeholder for now)
+            setTimeout(() => {
+                const aiMessage = document.createElement('div');
+                aiMessage.className = 'chat-message ai-message';
+                aiMessage.innerHTML = `
+                    <div class="message-header">
+                        <div class="message-sender">AI Error Analysis Specialist</div>
+                        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                    <div class="message-content">I understand your question: "${message}". This feature will be fully implemented in Phase 2 with real AI integration.</div>
+                `;
+                chatMessages.appendChild(aiMessage);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 1000);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 PC Monitoring System - Phase 1 Loading...');
+            
+            // Load initial errors
+            loadErrors();
+            
+            // Load API key
+            loadApiKey();
+            
+            // Set up event listeners
+            const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+            if (toggleApiKeyBtn) {
+                toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
+            }
+            
+            const chatInput = document.getElementById('chatInput');
+            const sendMessageBtn = document.getElementById('sendMessageBtn');
+            
+            if (sendMessageBtn) {
+                sendMessageBtn.addEventListener('click', sendMessage);
+            }
+            
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+            }
+            
+            // Auto-refresh errors every 30 seconds
+            setInterval(loadErrors, 30000);
+            
+            console.log('✅ Phase 1 API Key System initialized');
+        });
         
         // API Key Management
         async function checkApiStatus() {
@@ -432,24 +973,6 @@
             }
         }
         
-        function updateSystemStatus() {
-            const systemStatus = document.getElementById('systemStatus');
-            systemStatus.innerHTML = `
-                <div style="padding: 1rem; background: rgba(0, 255, 136, 0.1); border-radius: 4px;">
-                    <h4 style="color: #00ff88; margin-bottom: 0.5rem;">🔑 API Key System</h4>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Status: <span style="color: #00ff88;">OPERATIONAL</span></p>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Storage: <span style="color: #00ff88;">PERSISTENT</span></p>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Loading: <span style="color: #00ff88;">AUTOMATIC</span></p>
-                </div>
-                <div style="padding: 1rem; background: rgba(0, 123, 255, 0.1); border-radius: 4px;">
-                    <h4 style="color: #007bff; margin-bottom: 0.5rem;">📊 Phase Status</h4>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Current: <span style="color: #007bff;">PHASE 1</span></p>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Focus: <span style="color: #007bff;">API Key System</span></p>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">Next: <span style="color: #ffc107;">PC Creation Logic</span></p>
-                </div>
-            `;
-        }
-        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 PC Monitoring System - Phase 1 Loading...');
@@ -460,16 +983,43 @@
                 checkApiStatus();
             });
             
+            // Load initial errors
+            loadErrors();
+            
             // Set up event listeners
-            document.getElementById('toggleApiKeyBtn').addEventListener('click', toggleApiKeyVisibility);
+            const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+            if (toggleApiKeyBtn) {
+                toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
+            }
+            
+            const chatInput = document.getElementById('chatInput');
+            const sendMessageBtn = document.getElementById('sendMessageBtn');
+            
+            if (sendMessageBtn) {
+                sendMessageBtn.addEventListener('click', sendMessage);
+            }
+            
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+            }
             
             // Add Enter key support for API key input
-            document.getElementById('apiKey').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveApiKey();
-                }
-            });
+            const apiKeyInput = document.getElementById('apiKey');
+            if (apiKeyInput) {
+                apiKeyInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveApiKey();
+                    }
+                });
+            }
+            
+            // Auto-refresh errors every 30 seconds
+            setInterval(loadErrors, 30000);
             
             console.log('✅ Phase 1 API Key System initialized');
         });
